@@ -39,8 +39,8 @@ def test_detect_platform(tmp_path):
 def test_overview_stats(ios_report):
     stats = dict(overview_stats(ios_report))
     assert stats["stat_contacts"] == 1
-    # messages = SMS/iMessage (2) + WhatsApp (4) + Instagram social (3)
-    assert stats["stat_messages"] == 9
+    # messages = SMS/iMessage (2) + WhatsApp (12) + social apps (10)
+    assert stats["stat_messages"] == 24
     assert stats["stat_apps"] >= 1
 
 
@@ -53,8 +53,8 @@ def test_device_summary(ios_report):
 def test_section_table_messages(ios_report):
     cols, rows, _ = section_table(ios_report, "sec_messages")
     assert "text" in cols and "source" in cols
-    # merged stream: 2 SMS/iMessage + 4 WhatsApp + 3 Instagram = 9
-    assert len(rows) == 9
+    # merged stream: 2 SMS/iMessage + 12 WhatsApp + 10 social = 24
+    assert len(rows) == 24
 
 
 def test_section_table_contacts(ios_report):

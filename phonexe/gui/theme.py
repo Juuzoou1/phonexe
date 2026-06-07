@@ -2,27 +2,30 @@
 
 from __future__ import annotations
 
-# Core palette (deep navy background, cyan accent) matching the design.
-BG = "#0a0e1a"          # window background
-PANEL = "#101627"       # card / panel background
-PANEL_ALT = "#0d1320"   # slightly darker panel
-BORDER = "#1c2740"      # subtle borders
-TEXT = "#e6ebf5"        # primary text
-TEXT_DIM = "#8a96b0"    # secondary text
-ACCENT = "#22d3ee"      # cyan accent
-ACCENT_DIM = "#0e7490"  # darker cyan
+# Core palette — exact values from the approved design spec.
+BG = "#050B12"          # window background
+PANEL = "#08121D"       # card / panel background
+PANEL_ALT = "#0a1622"   # slightly lighter panel for contrast rows
+BORDER = "#112436"      # subtle borders
+TEXT = "#D8F7FF"        # primary text
+TEXT_DIM = "#7EA0B8"    # secondary text
+ACCENT = "#4FE3E0"      # accent (teal/cyan)
+ACCENT_DIM = "#1f7e7c"  # darker accent
 DANGER = "#ef4444"      # red (end exam, deleted)
 OK = "#22c55e"          # green (connected)
 WARN = "#f59e0b"
 
-# Accent colors used for the stat cards (left to right in the design).
-STAT_COLORS = ["#22d3ee", "#34d399", "#a78bfa", "#f472b6", "#fbbf24", "#f87171"]
+# Preferred font stack (Arabic-friendly), falling back gracefully.
+FONT_STACK = "'Cairo', 'IBM Plex Sans Arabic', 'Segoe UI', 'Tahoma', 'Arial'"
+
+# Stat-card numbers are the teal accent in the design, with one warm accent.
+STAT_COLORS = [ACCENT, ACCENT, ACCENT, "#7EA0B8", ACCENT, ACCENT]
 
 
 def stylesheet() -> str:
     return f"""
 * {{
-    font-family: 'Segoe UI', 'Tahoma', 'Arial';
+    font-family: {FONT_STACK};
     color: {TEXT};
     outline: none;
 }}

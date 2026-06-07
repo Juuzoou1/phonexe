@@ -98,9 +98,12 @@ class MainWindow(QWidget):
         body = QHBoxLayout()
         body.setContentsMargins(14, 14, 14, 14)
         body.setSpacing(14)
-        body.addWidget(self._build_sidebar(), 0)
-        body.addWidget(self._build_center(), 1)
+        # Order matches the reference: device-info column on one side, the
+        # section-navigation sidebar on the other (in RTL the first-added
+        # widget renders right-most, so info goes right, nav goes left).
         body.addWidget(self._build_right(), 0)
+        body.addWidget(self._build_center(), 1)
+        body.addWidget(self._build_sidebar(), 0)
         body_w = QWidget()
         body_w.setLayout(body)
         root.addWidget(body_w, 1)

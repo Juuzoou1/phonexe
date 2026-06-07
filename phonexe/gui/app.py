@@ -13,6 +13,8 @@ from .mainwindow import MainWindow
 def run(argv: list[str] | None = None) -> int:
     app = QApplication(argv if argv is not None else sys.argv)
     app.setApplicationName("phonexe")
+    from .fonts import load_fonts
+    load_fonts()
     app.setStyleSheet(theme.stylesheet())
     window = MainWindow()
     window.show()

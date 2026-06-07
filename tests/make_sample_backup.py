@@ -126,23 +126,37 @@ def _make_whatsapp_builder(image_path: str):
             "ZMESSAGEDATE, ZISFROMME, ZFROMJID, ZTOJID, ZCHATSESSION, "
             "ZLATITUDE, ZLONGITUDE, ZMEDIAITEM)"
         )
-        con.execute(
-            "INSERT INTO ZWACHATSESSION VALUES(1,'1@s.whatsapp.net','Sara')"
-        )
+        sessions = [
+            (1, "Sara"), (2, "أحمد"), (3, "سالم الحربي"),
+            (4, "فهد"), (5, "نورة"), (6, "خالد العتيبي"),
+        ]
+        for pk, name in sessions:
+            con.execute("INSERT INTO ZWACHATSESSION VALUES(?,?,?)",
+                        (pk, f"{pk}@s.whatsapp.net", name))
         con.execute("INSERT INTO ZWAMEDIAITEM VALUES(1,?)", (image_path,))
-        # text, location, image, reply
-        con.execute(
-            "INSERT INTO ZWAMESSAGE VALUES(1,'مرحبا، وين نتقابل؟',?,0,"
-            "'1@s.whatsapp.net','me',1,NULL,NULL,NULL)", (_T,))
-        con.execute(
-            "INSERT INTO ZWAMESSAGE VALUES(2,'موقعي الحين',?,0,"
-            "'1@s.whatsapp.net','me',1,25.2854,51.5310,NULL)", (_T + 60,))
-        con.execute(
-            "INSERT INTO ZWAMESSAGE VALUES(3,'شوف الصورة',?,1,'me',"
-            "'1@s.whatsapp.net',1,NULL,NULL,1)", (_T + 120,))
-        con.execute(
-            "INSERT INTO ZWAMESSAGE VALUES(4,'تمام، جاي',?,1,'me',"
-            "'1@s.whatsapp.net',1,NULL,NULL,NULL)", (_T + 180,))
+
+        rows = [
+            # (text, from_me, session, lat, lon, media)
+            ("مرحبا، وين نتقابل؟", 0, 1, None, None, None),
+            ("موقعي الحين", 0, 1, 25.2854, 51.5310, None),
+            ("شوف الصورة", 1, 1, None, None, 1),
+            ("تمام، جاي", 1, 1, None, None, None),
+            ("وصلت الجهاز اللي تبيه؟", 0, 2, None, None, None),
+            ("إي وصل، شكراً", 1, 2, None, None, None),
+            ("تواصل معي بكرة الصبح", 0, 3, None, None, None),
+            ("الاجتماع الساعة ٥", 0, 4, None, None, None),
+            ("اوكي ثانكس", 1, 4, None, None, None),
+            ("ارسلت لك الملفات", 0, 5, None, None, None),
+            ("استلمتها", 1, 5, None, None, None),
+            ("نشوفك في المكتب", 0, 6, None, None, None),
+        ]
+        for i, (text, fm, sess, lat, lon, media) in enumerate(rows, start=1):
+            jid = f"{sess}@s.whatsapp.net"
+            frm = "me" if fm else jid
+            to = jid if fm else "me"
+            con.execute(
+                "INSERT INTO ZWAMESSAGE VALUES(?,?,?,?,?,?,?,?,?,?)",
+                (i, text, _T + i * 60, fm, frm, to, sess, lat, lon, media))
     return _build_whatsapp
 
 
@@ -167,6 +181,53 @@ def _make_instagram_builder(image_path: str):
             "(3,'شوف ستوري',1685621000,'noor',NULL,NULL,?)", (image_path,)
         )
     return _build_instagram
+
+
+def _make_chat_builder(rows):
+    """Generic builder: a 'messages' table the social collector detects."""
+    def _build(con):
+        con.execute(
+            "CREATE TABLE messages(pk INTEGER PRIMARY KEY, text, timestamp, "
+            "sender)"
+        )
+        for i, (text, sender) in enumerate(rows, start=1):
+            con.execute("INSERT INTO messages VALUES(?,?,?,?)",
+                        (i, text, 1685620800 + i * 60, sender))
+    return _build
+
+
+def _write_skyline(path: Path) -> None:
+    """Draw a simple city-skyline image for the Instagram featured post."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        from PIL import Image, ImageDraw
+        import random
+
+        w, h = 320, 200
+        img = Image.new("RGB", (w, h))
+        draw = ImageDraw.Draw(img)
+        # sky gradient (dusk)
+        for y in range(h):
+            t = y / h
+            draw.line([(0, y), (w, y)],
+                      fill=(int(20 + 40 * t), int(24 + 30 * t),
+                            int(60 + 50 * t)))
+        random.seed(7)
+        x = 0
+        while x < w:
+            bw = random.randint(18, 36)
+            bh = random.randint(60, 150)
+            draw.rectangle([x, h - bh, x + bw, h],
+                           fill=(12, 18, 30))
+            for wy in range(h - bh + 6, h - 6, 12):
+                for wx in range(x + 4, x + bw - 4, 8):
+                    if random.random() > 0.4:
+                        draw.rectangle([wx, wy, wx + 3, wy + 5],
+                                       fill=(255, 214, 120))
+            x += bw + random.randint(2, 8)
+        img.save(path)
+    except Exception:
+        _write_sample_image(path)
 
 
 def _write_sample_image(path: Path) -> None:
@@ -194,7 +255,7 @@ def build(root: str | Path) -> Path:
     media = root / "media" / "wa_photo.png"
     _write_sample_image(media)
     ig_media = root / "media" / "ig_story.png"
-    _write_sample_image(ig_media)
+    _write_skyline(ig_media)
 
     files = [
         ("HomeDomain", "Library/AddressBook/AddressBook.sqlitedb",
@@ -207,6 +268,18 @@ def build(root: str | Path) -> Path:
          _sqlite_bytes(_make_whatsapp_builder(str(media.resolve())))),
         ("AppDomain-com.burbn.instagram", "Documents/direct.db",
          _sqlite_bytes(_make_instagram_builder(str(ig_media.resolve())))),
+        ("AppDomain-org.telegram.Telegraph", "telegram.sqlite",
+         _sqlite_bytes(_make_chat_builder([
+             ("هلا بك", "تليجرام"), ("تم الإرسال", "me")]))),
+        ("AppDomain-com.toyopagroup.picaboo", "snap.db",
+         _sqlite_bytes(_make_chat_builder([
+             ("👻 سناب", "snap_user"), ("شفت الستوري؟", "noor")]))),
+        ("AppDomain-com.zhiliaoapp.musically", "tiktok.db",
+         _sqlite_bytes(_make_chat_builder([
+             ("شوف الفيديو", "tiktok_fan")]))),
+        ("AppDomain-com.hammerandchisel.discord", "discord.db",
+         _sqlite_bytes(_make_chat_builder([
+             ("gg", "gamer"), ("join the call", "me")]))),
     ]
 
     # Build Manifest.db.
