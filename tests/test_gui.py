@@ -164,3 +164,16 @@ def test_qt_smoke(tmp_path):
     win.select_section("sec_contacts")
     assert win.table.rowCount() == 1
     app.processEvents()
+
+
+def test_global_search(ios_report):
+    from phonexe.gui.datasource import global_search
+    hits = global_search(ios_report, "Sara")
+    assert hits and all("section" in h and "match" in h for h in hits)
+    assert global_search(ios_report, "") == []
+
+
+def test_new_sections(ios_report):
+    for sec in ("sec_calendar", "sec_notes", "sec_files"):
+        cols, rows, _ = section_table(ios_report, sec)
+        assert cols  # has columns

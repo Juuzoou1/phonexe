@@ -14,16 +14,28 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import __version__
+from .android import calendar as a_calendar
 from .android import calls as a_calls
 from .android import contacts as a_contacts
 from .android import deleted as a_deleted
+from .android import files as a_files
 from .android import messages as a_messages
 from .android import social as a_social
 from .android import whatsapp as a_whatsapp
 from .android.extraction import AndroidExtraction, ExtractionError
 from .apps import social, whatsapp
 from .backup import BackupError, IOSBackup
-from .extractors import calls, contacts, deleted, messages, photos, safari
+from .extractors import (
+    calendar,
+    calls,
+    contacts,
+    deleted,
+    files,
+    messages,
+    notes,
+    photos,
+    safari,
+)
 from .hashing import hash_tree
 from .reporting import report as reporting
 
@@ -44,6 +56,9 @@ _CORE_EXTRACTORS = [
     safari,
     whatsapp,
     social,
+    calendar,
+    notes,
+    files,
     deleted,
 ]
 
@@ -54,6 +69,8 @@ _ANDROID_EXTRACTORS = [
     a_calls,
     a_whatsapp,
     a_social,
+    a_calendar,
+    a_files,
     a_deleted,
 ]
 

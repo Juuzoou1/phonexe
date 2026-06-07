@@ -105,3 +105,11 @@ def test_ios_acquire_check():
     # graceful when no device / backend present
     assert ios_acquire.list_devices() == [] or isinstance(
         ios_acquire.list_devices(), list)
+
+
+def test_calendar_notes_files(backup):
+    from phonexe.extractors import calendar, notes, files
+    assert calendar.extract(backup)["count"] == 1
+    assert notes.extract(backup)["count"] == 1
+    assert "كلمة سر" in notes.extract(backup)["records"][0]["content"]
+    assert files.extract(backup)["count"] > 0

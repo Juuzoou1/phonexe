@@ -55,9 +55,13 @@ _SECTIONS = [
     ("sec_calls", "phone"),
     ("sec_contacts", "users"),
     ("sec_browser", "globe"),
+    ("sec_calendar", "calendar"),
+    ("sec_notes", "file-text"),
+    ("sec_files", "file"),
     ("sec_timeline", "clock"),
     ("sec_accounts", "key-round"),
     ("sec_deleted", "trash-2"),
+    ("sec_bookmarks", "bookmark"),
 ]
 
 _NAV = ["nav_dashboard", "nav_extract", "nav_analyze", "nav_reports", "nav_tools"]
@@ -92,6 +96,9 @@ class MainWindow(QWidget):
         self.current_section = "sec_overview"
         self._chat_return = "sec_apps"
         self._chat_size_mode = "full"
+        self.bookmarks: list[dict] = []
+        self._current_cols: list[str] = []
+        self._search_results: list[dict] = []
         self._worker: AnalyzeWorker | None = None
 
         self.setWindowTitle("phonexe")
@@ -181,6 +188,12 @@ class MainWindow(QWidget):
         self.nav_btns["nav_dashboard"].setChecked(True)
 
         lay.addStretch(1)
+
+        # global search across all sections
+        self.global_search_box = QLineEdit()
+        self.global_search_box.setFixedWidth(240)
+        self.global_search_box.returnPressed.connect(self._run_global_search)
+        lay.addWidget(self.global_search_box)
 
         clock_box = QVBoxLayout()
         clock_box.setSpacing(0)
@@ -337,6 +350,7 @@ class MainWindow(QWidget):
         )
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.cellDoubleClicked.connect(self._bookmark_row)
         self.content_stack.addWidget(self.table)          # index 0
 
         self.map_view = OfflineMap()
@@ -389,6 +403,18 @@ class MainWindow(QWidget):
         cc.setLayout(self.chat_container)
         chat_v.addWidget(cc, 1)
         self.content_stack.addWidget(self.chat_holder)     # index 4
+
+        # top-nav pages (reports / tools / extraction)
+        self.nav_holder = QScrollArea()
+        self.nav_holder.setWidgetResizable(True)
+        self.nav_holder.setFrameShape(QFrame.Shape.NoFrame)
+        self.nav_holder.setStyleSheet("background:transparent;border:none;")
+        self.nav_inner = QWidget()
+        self.nav_page_layout = QVBoxLayout(self.nav_inner)
+        self.nav_page_layout.setContentsMargins(4, 4, 4, 4)
+        self.nav_page_layout.setSpacing(12)
+        self.nav_holder.setWidget(self.nav_inner)
+        self.content_stack.addWidget(self.nav_holder)      # index 5
 
         cp.addWidget(self.content_stack, 1)
         lay.addWidget(content, 1)
@@ -482,6 +508,7 @@ class MainWindow(QWidget):
         self.stats_title_lbl.setText(tr("stats_title"))
         self.refresh_btn.setText(tr("refresh"))
         self.search_box.setPlaceholderText(tr("search"))
+        self.global_search_box.setPlaceholderText(tr("global_search"))
         self.devinfo_title.setText(tr("device_info"))
         self.extract_title.setText(tr("extraction_status"))
         self.events_title.setText(tr("recent_events"))
@@ -496,18 +523,81 @@ class MainWindow(QWidget):
     def on_nav(self, key: str):
         for k, b in self.nav_btns.items():
             b.setChecked(k == key)
+        if key in ("nav_dashboard", "nav_analyze"):
+            self.select_section("sec_overview")
+            return
+        # build the corresponding top-nav page
+        while self.nav_page_layout.count():
+            item = self.nav_page_layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
         if key == "nav_reports":
-            self.export_report()
-            self.nav_btns["nav_dashboard"].setChecked(True)
-            self.nav_btns["nav_reports"].setChecked(False)
+            self._build_reports_page()
         elif key == "nav_extract":
-            self.open_dir("ios")
-            self.nav_btns["nav_dashboard"].setChecked(True)
-            self.nav_btns["nav_extract"].setChecked(False)
+            self._build_extraction_page()
         elif key == "nav_tools":
-            self.show_about()
-            self.nav_btns["nav_dashboard"].setChecked(True)
-            self.nav_btns["nav_tools"].setChecked(False)
+            self._build_tools_page()
+        self.section_title_lbl.setVisible(False)
+        self.search_box.setVisible(False)
+        self.note_lbl.setVisible(False)
+        self.content_stack.setCurrentIndex(5)
+
+    def _nav_panel(self, title: str) -> QVBoxLayout:
+        panel = QFrame()
+        panel.setObjectName("panel")
+        lay = QVBoxLayout(panel)
+        lay.setContentsMargins(18, 16, 18, 18)
+        lay.setSpacing(12)
+        h = QLabel(title)
+        h.setObjectName("panelTitle")
+        lay.addWidget(h)
+        self.nav_page_layout.addWidget(panel)
+        return lay
+
+    def _big_btn(self, text: str, slot, primary=True) -> QPushButton:
+        b = QPushButton(text)
+        b.setObjectName("primary" if primary else "ghost")
+        b.setMinimumHeight(40)
+        b.setCursor(Qt.CursorShape.PointingHandCursor)
+        b.clicked.connect(slot)
+        return b
+
+    def _build_reports_page(self):
+        lay = self._nav_panel(tr("reports_title"))
+        lay.addWidget(self._big_btn(tr("export_pdf"),
+                                    lambda: self.export_report("pdf")))
+        lay.addWidget(self._big_btn(tr("export_html"),
+                                    lambda: self.export_report("html"), False))
+        lay.addWidget(self._big_btn(tr("export_json"),
+                                    lambda: self.export_report("json"), False))
+        note = QLabel(tr("scope_note"))
+        note.setObjectName("noteLabel")
+        note.setWordWrap(True)
+        lay.addWidget(note)
+        self.nav_page_layout.addStretch(1)
+
+    def _build_extraction_page(self):
+        lay = self._nav_panel(tr("extract_title"))
+        lay.addWidget(self._big_btn(tr("open_ios"),
+                                    lambda: self.open_dir("ios")))
+        lay.addWidget(self._big_btn(tr("open_android"),
+                                    lambda: self.open_dir("android"), False))
+        lay.addWidget(self._big_btn(tr("open_report"),
+                                    self.open_report_file, False))
+        note = QLabel(tr("scope_note"))
+        note.setObjectName("noteLabel")
+        note.setWordWrap(True)
+        lay.addWidget(note)
+        self.nav_page_layout.addStretch(1)
+
+    def _build_tools_page(self):
+        lay = self._nav_panel(tr("tools_title"))
+        lay.addWidget(self._big_btn(tr("language"), self.toggle_language, False))
+        about = QLabel(f"phonexe v{__version__}\n\n{tr('scope_note')}")
+        about.setObjectName("noteLabel")
+        about.setWordWrap(True)
+        lay.addWidget(about)
+        self.nav_page_layout.addStretch(1)
 
     def _refresh_section_icons(self):
         from .svgicons import nav_icon
@@ -653,18 +743,75 @@ class MainWindow(QWidget):
             self.content_stack.setCurrentIndex(1)
             return
 
+        # bookmarks
+        if section == "sec_bookmarks":
+            self.search_box.setVisible(False)
+            self.note_lbl.setText(tr("bookmark_hint"))
+            self.note_lbl.setVisible(True)
+            cols = ["section", "data"]
+            rows = [[b["section"], b["data"]] for b in self.bookmarks]
+            self._current_cols = cols
+            self._all_rows = rows
+            self.table.clear()
+            self.table.setColumnCount(len(cols))
+            self.table.setHorizontalHeaderLabels(cols)
+            self._fill_rows(rows)
+            self.content_stack.setCurrentIndex(0)
+            return
+
+        # global search results
+        if section == "sec_search":
+            self.search_box.setVisible(False)
+            self.note_lbl.setVisible(False)
+            cols = ["section", "match"]
+            rows = [[r["section"], r["match"]] for r in self._search_results]
+            self._current_cols = cols
+            self._all_rows = rows
+            self.table.clear()
+            self.table.setColumnCount(len(cols))
+            self.table.setHorizontalHeaderLabels(cols)
+            self._fill_rows(rows)
+            self.content_stack.setCurrentIndex(0)
+            return
+
         # default: table
         self.search_box.setVisible(True)
         table_section = "sec_messages" if section == "sec_overview" else section
         cols, rows, note = section_table(report, table_section)
         self.note_lbl.setText(note)
         self.note_lbl.setVisible(bool(note))
+        self._current_cols = cols
         self._all_rows = rows
         self.table.clear()
         self.table.setColumnCount(len(cols))
         self.table.setHorizontalHeaderLabels(cols)
         self._fill_rows(rows)
         self.content_stack.setCurrentIndex(0)
+
+    def _run_global_search(self):
+        q = self.global_search_box.text().strip()
+        if not q or not self.report:
+            return
+        from .datasource import global_search
+        self._search_results = global_search(self.report, q)
+        self.current_section = "sec_search"
+        for b in self.section_btns.values():
+            b.setChecked(False)
+        self.section_title_lbl.setVisible(True)
+        self.section_title_lbl.setText(
+            f"{tr('search_results')} — {q} ({len(self._search_results)})")
+        self.refresh_views()
+
+    def _bookmark_row(self, r: int, _c: int):
+        if self.current_section in ("sec_bookmarks", "sec_search"):
+            return
+        if r < 0 or r >= len(getattr(self, "_all_rows", [])):
+            return
+        data = "  ·  ".join(x for x in self._all_rows[r] if x)[:200]
+        self.bookmarks.append({"section": tr(self.current_section),
+                               "data": data})
+        QMessageBox.information(self, "phonexe",
+                               tr("sec_bookmarks") + " ✓")
 
     def _build_overview(self, report: dict):
         from .dashboard import build_dashboard
@@ -853,7 +1000,7 @@ class MainWindow(QWidget):
         self._fill_rows(filtered)
 
     # ------------------------------------------------------------ actions
-    def export_report(self):
+    def export_report(self, fmt: str = "html"):
         if not self.report:
             QMessageBox.information(self, "phonexe", tr("no_data"))
             return
@@ -861,9 +1008,18 @@ class MainWindow(QWidget):
         if not out:
             return
         out_dir = Path(out)
-        reporting.write_json(self.report, out_dir / "report.json")
-        html_path = reporting.write_html(self.report, out_dir / "report.html")
-        QMessageBox.information(self, "phonexe", str(html_path))
+        try:
+            if fmt == "json":
+                path = reporting.write_json(self.report, out_dir / "report.json")
+            elif fmt == "pdf":
+                from ..reporting import pdf
+                path = pdf.write_pdf(self.report, out_dir / "report.pdf")
+            else:
+                path = reporting.write_html(self.report, out_dir / "report.html")
+        except Exception as e:
+            QMessageBox.critical(self, "phonexe", str(e))
+            return
+        QMessageBox.information(self, "phonexe", str(path))
 
     def end_examination(self):
         self.report = None

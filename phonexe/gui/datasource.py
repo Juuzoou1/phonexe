@@ -479,6 +479,32 @@ def activity_by_source(report: dict) -> list[tuple[str, int]]:
     return out
 
 
+_SEARCH_SECTIONS = [
+    "sec_messages", "sec_calls", "sec_contacts", "sec_media",
+    "sec_browser", "sec_calendar", "sec_notes", "sec_files",
+    "sec_accounts", "sec_deleted",
+]
+
+
+def global_search(report: dict, query: str, limit: int = 500) -> list[dict]:
+    """Search every section's rows for *query*; return match rows."""
+    q = (query or "").strip().lower()
+    if not q:
+        return []
+    from .i18n import tr
+    results: list[dict] = []
+    for sec in _SEARCH_SECTIONS:
+        cols, rows, _ = section_table(report, sec)
+        label = tr(sec)
+        for row in rows:
+            joined = "  ·  ".join(c for c in row if c)
+            if q in joined.lower():
+                results.append({"section": label, "match": joined[:160]})
+                if len(results) >= limit:
+                    return results
+    return results
+
+
 def section_table(report: dict, section: str
                   ) -> tuple[list[str], list[list[str]], str]:
     """Return (columns, rows, note) for a sidebar section."""
@@ -516,6 +542,13 @@ def section_table(report: dict, section: str
     elif section == "sec_timeline":
         cols, rows = _to_table(timeline(report),
                                ["timestamp", "type", "source", "detail"])
+    elif section == "sec_calendar":
+        cols, rows = _to_table(_records(report, "calendar"),
+                               ["title", "start", "end", "location"])
+    elif section == "sec_notes":
+        cols, rows = _to_table(_records(report, "notes"), ["title", "content"])
+    elif section == "sec_files":
+        cols, rows = _to_table(_records(report, "files"), ["domain", "path"])
     else:
         cols, rows = [], []
     return cols, rows, note

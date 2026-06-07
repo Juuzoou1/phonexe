@@ -183,6 +183,24 @@ def _make_instagram_builder(image_path: str):
     return _build_instagram
 
 
+def _build_calendar(con):
+    con.execute(
+        "CREATE TABLE CalendarItem(ROWID INTEGER PRIMARY KEY, summary, "
+        "start_date, end_date, location)"
+    )
+    con.execute(
+        "INSERT INTO CalendarItem VALUES(1,'اجتماع المشروع',?,?,'الدوحة')",
+        (_T, _T + 3600),
+    )
+
+
+def _build_notes(con):
+    con.execute("CREATE TABLE ZNOTEBODY(Z_PK INTEGER PRIMARY KEY, ZCONTENT)")
+    con.execute(
+        "INSERT INTO ZNOTEBODY VALUES(1,'<div>كلمة سر الحساب: 1234</div>')"
+    )
+
+
 def _make_chat_builder(rows):
     """Generic builder: a 'messages' table the social collector detects."""
     def _build(con):
@@ -263,6 +281,10 @@ def build(root: str | Path) -> Path:
         ("HomeDomain", "Library/SMS/sms.db", _sqlite_bytes(_build_sms)),
         ("HomeDomain", "Library/CallHistoryDB/CallHistory.storedata",
          _sqlite_bytes(_build_calls)),
+        ("HomeDomain", "Library/Calendar/Calendar.sqlitedb",
+         _sqlite_bytes(_build_calendar)),
+        ("HomeDomain", "Library/Notes/notes.sqlite",
+         _sqlite_bytes(_build_notes)),
         ("AppDomainGroup-group.net.whatsapp.WhatsApp.shared",
          "ChatStorage.sqlite",
          _sqlite_bytes(_make_whatsapp_builder(str(media.resolve())))),

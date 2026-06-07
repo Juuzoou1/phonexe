@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3
+      - name: Install Python dependencies
+        run: pip install Pillow PyQt6 pytest
+      - name: Run tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+
+  build-windows:
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller Pillow PyQt6
+          pip install pymobiledevice3 || echo "pymobiledevice3 optional - skipped"
+      - name: Build phonexe.exe
+        run: python build_exe.py
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: phonexe-windows
+          path: dist/phonexe.exe
+          if-no-files-found: error
