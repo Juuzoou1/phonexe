@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-# Core palette — exact values from the approved design brief.
-BG = "#050B12"          # window background
-PANEL = "#08121D"       # main panels
-CARD = "#0D1724"        # cards / inner surfaces
+# Core palette — design brief values, deepened for a darker look.
+BG = "#02060B"          # window background (near-black)
+PANEL = "#060D16"       # main panels
+CARD = "#0A131E"        # cards / inner surfaces
 PANEL_ALT = CARD        # alias used across the UI
-BORDER = "#14283D"      # borders
+BORDER = "#11233A"      # borders
 TEXT = "#F4F8FC"        # text primary
 TEXT_DIM = "#90A6BC"    # text secondary
 ACCENT = "#4FE3E0"      # primary accent (cyan)
@@ -40,7 +40,8 @@ def stylesheet() -> str:
     color: {TEXT};
     outline: none;
 }}
-QMainWindow, QWidget#root {{ background: {BG}; }}
+QMainWindow {{ background: {BG}; }}
+/* #root is painted in code (dark base + ambient glow) */
 
 /* ---- top bar ---- */
 QWidget#topbar {{

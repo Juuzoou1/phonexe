@@ -113,6 +113,32 @@ class MainWindow(QWidget):
         self.select_section("sec_overview")
         self.refresh_views()
 
+    # ------------------------------------------------------------ background
+    def paintEvent(self, _e):  # noqa: N802
+        """Dark base with soft ambient cyan/blue glows behind the panels."""
+        from PyQt6.QtGui import QColor, QPainter, QRadialGradient
+
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        p.fillRect(self.rect(), QColor(theme.BG))
+
+        def glow(cx, cy, radius, hex_color, alpha):
+            g = QRadialGradient(cx, cy, radius)
+            c = QColor(hex_color)
+            c.setAlpha(alpha)
+            g.setColorAt(0.0, c)
+            c2 = QColor(hex_color)
+            c2.setAlpha(0)
+            g.setColorAt(1.0, c2)
+            p.fillRect(self.rect(), g)
+
+        # cyan aura top-right, blue aura bottom-left, faint center lift
+        glow(w * 0.82, h * 0.04, w * 0.55, theme.ACCENT, 46)
+        glow(w * 0.10, h * 0.96, w * 0.55, theme.ACCENT2, 38)
+        glow(w * 0.5, h * 0.45, w * 0.6, theme.ACCENT, 12)
+        p.end()
+
     # ------------------------------------------------------------ top bar
     def _build_topbar(self) -> QWidget:
         bar = QWidget()
