@@ -121,3 +121,14 @@ def test_chrome_history(backup):
     assert out["count"] == 1
     assert out["records"][0]["url"] == "https://example.com"
     assert out["records"][0]["timestamp"].startswith("2023-")
+
+
+def test_installed_and_bookmarks(backup):
+    from phonexe.extractors import installed, bookmarks
+    inst = installed.extract(backup)
+    assert inst["count"] == 8
+    assert any(r["bundle_id"] == "net.whatsapp.WhatsApp"
+               for r in inst["records"])
+    bm = bookmarks.extract(backup)
+    assert bm["count"] == 1
+    assert bm["records"][0]["url"] == "https://example.com"

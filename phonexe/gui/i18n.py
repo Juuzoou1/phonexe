@@ -29,6 +29,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     # ---- sections ----
     "sec_overview": {"ar": "نظرة عامة", "en": "Overview"},
     "sec_apps": {"ar": "التطبيقات المثبتة", "en": "Installed Apps"},
+    "sec_installed": {"ar": "جرد التطبيقات", "en": "App Inventory"},
     "sec_messages": {"ar": "الرسائل والمحادثات", "en": "Messages & Chats"},
     "sec_media": {"ar": "وسائط متعددة", "en": "Multimedia"},
     "sec_location": {"ar": "الموقع الجغرافي", "en": "Geolocation"},

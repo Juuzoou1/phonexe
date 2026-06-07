@@ -61,6 +61,7 @@ from .widgets import Donut, PhoneOutline, StatCard, apply_glow, hline
 _SECTIONS = [
     ("sec_overview", "layout-dashboard"),
     ("sec_apps", "layout-grid"),
+    ("sec_installed", "layout-grid"),
     ("sec_messages", "message-circle"),
     ("sec_media", "image"),
     ("sec_location", "map-pin"),

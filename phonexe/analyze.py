@@ -17,6 +17,7 @@ from .android import chrome as a_chrome
 from .android import contacts as a_contacts
 from .android import deleted as a_deleted
 from .android import files as a_files
+from .android import installed as a_installed
 from .android import messages as a_messages
 from .android import social as a_social
 from .android import whatsapp as a_whatsapp
@@ -24,22 +25,25 @@ from .android.extraction import AndroidExtraction
 from .apps import social, whatsapp
 from .backup import IOSBackup
 from .extractors import (
+    bookmarks,
     calendar,
     calls,
     chrome,
     contacts,
     deleted,
     files,
+    installed,
     messages,
     notes,
     photos,
     safari,
 )
 
-_IOS_EXTRACTORS = [contacts, messages, calls, safari, chrome, whatsapp, social,
-                   photos, calendar, notes, files, deleted]
+_IOS_EXTRACTORS = [contacts, messages, calls, safari, bookmarks, chrome,
+                   whatsapp, social, photos, calendar, notes, installed,
+                   files, deleted]
 _ANDROID_EXTRACTORS = [a_contacts, a_messages, a_calls, a_chrome, a_whatsapp,
-                       a_social, a_calendar, a_files, a_deleted]
+                       a_social, a_calendar, a_installed, a_files, a_deleted]
 
 
 def detect_platform(path: str | Path) -> str | None:

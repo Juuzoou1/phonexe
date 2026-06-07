@@ -254,3 +254,8 @@ def test_media_kind():
     assert media_kind("/a/b.m4a") == "audio"
     assert media_kind("/a/b.jpg") == "image"
     assert media_kind("/a/b.heic") == "image"
+
+
+def test_installed_section(ios_report):
+    cols, rows, _ = section_table(ios_report, "sec_installed")
+    assert "bundle_id" in cols and len(rows) == 8

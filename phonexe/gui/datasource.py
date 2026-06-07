@@ -611,8 +611,14 @@ def section_table(report: dict, section: str
             merged.append({"browser": "Chrome", "url": r.get("url"),
                            "title": r.get("title"),
                            "timestamp": r.get("timestamp")})
+        for r in _records(report, "safari_bookmarks"):
+            merged.append({"browser": "Safari ★", "url": r.get("url"),
+                           "title": r.get("title"), "timestamp": ""})
         cols, rows = _to_table(merged,
                                ["browser", "title", "url", "timestamp"])
+    elif section == "sec_installed":
+        cols, rows = _to_table(_records(report, "installed_apps"),
+                               ["bundle_id", "name", "version"])
     elif section == "sec_accounts":
         emails = []
         for c in _records(report, "contacts"):

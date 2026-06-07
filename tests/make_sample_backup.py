@@ -183,6 +183,18 @@ def _make_instagram_builder(image_path: str):
     return _build_instagram
 
 
+def _build_bookmarks(con):
+    con.execute(
+        "CREATE TABLE bookmarks(id INTEGER PRIMARY KEY, title, url)"
+    )
+    con.execute(
+        "INSERT INTO bookmarks VALUES(1,'Example Site','https://example.com')"
+    )
+    con.execute(
+        "INSERT INTO bookmarks VALUES(2,'Folder',NULL)"
+    )
+
+
 def _build_chrome(con):
     con.execute(
         "CREATE TABLE urls(id INTEGER PRIMARY KEY, url, title, visit_count, "
@@ -301,6 +313,8 @@ def build(root: str | Path) -> Path:
         ("AppDomain-com.google.chrome.ios",
          "Library/Application Support/Google/Chrome/Default/History",
          _sqlite_bytes(_build_chrome)),
+        ("AppDomainGroup-group.com.apple.safari", "Library/Safari/Bookmarks.db",
+         _sqlite_bytes(_build_bookmarks)),
         ("AppDomainGroup-group.net.whatsapp.WhatsApp.shared",
          "ChatStorage.sqlite",
          _sqlite_bytes(_make_whatsapp_builder(str(media.resolve())))),
@@ -348,6 +362,12 @@ def build(root: str | Path) -> Path:
                 "Serial Number": "F2LXXSAMPLE",
                 "IMEI": "350000000000001",
                 "Phone Number": "+966500000000",
+                "Installed Applications": [
+                    "net.whatsapp.WhatsApp", "com.burbn.instagram",
+                    "com.toyopagroup.picaboo", "org.telegram.messenger",
+                    "com.zhiliaoapp.musically", "com.hammerandchisel.discord",
+                    "com.apple.mobilesafari", "com.google.chrome.ios",
+                ],
             }
         )
     )
