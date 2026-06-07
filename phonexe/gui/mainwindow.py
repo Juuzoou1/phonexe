@@ -45,6 +45,7 @@ from .datasource import (
 )
 from .fluent import (
     ComboBox,
+    FluentIcon,
     LineEdit,
     PrimaryPushButton,
     PushButton,
@@ -546,6 +547,14 @@ class MainWindow(QWidget):
         self.open_ios_btn.setText(tr("open_ios"))
         self.open_android_btn.setText(tr("open_android"))
         self.open_report_btn.setText(tr("open_report"))
+        if FluentIcon is not None:
+            try:
+                self.open_ios_btn.setIcon(FluentIcon.PHONE)
+                self.open_android_btn.setIcon(FluentIcon.PHONE)
+                self.open_report_btn.setIcon(FluentIcon.DOCUMENT)
+                self.device_info_btn.setIcon(FluentIcon.INFO)
+            except Exception:
+                pass
         self.sections_lbl.setText(tr("main_sections"))
         for key, btn in self.section_btns.items():
             btn.setText("   " + tr(key))
@@ -1099,7 +1108,7 @@ class MainWindow(QWidget):
             QMessageBox.critical(self, "phonexe", str(e))
             return
         self.audit.record("report_exported", f"{fmt}: {path}")
-        QMessageBox.information(self, "phonexe", str(path))
+        notify(self, tr("reports_title"), str(path), success=True)
 
     def save_case(self):
         if not self.report:
@@ -1115,8 +1124,8 @@ class MainWindow(QWidget):
         reporting.write_json(case, out_dir / "case.phonexe.json")
         self.audit.save(out_dir / "audit.json")
         self.audit.record("case_saved", str(out_dir))
-        QMessageBox.information(self, "phonexe",
-                               str(out_dir / "case.phonexe.json"))
+        notify(self, tr("save_case"), str(out_dir / "case.phonexe.json"),
+               success=True)
 
     def end_examination(self):
         self.report = None

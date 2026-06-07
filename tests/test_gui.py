@@ -20,6 +20,25 @@ from tests.make_sample_android import build as build_android
 from tests.make_sample_backup import build as build_ios
 
 
+@pytest.fixture(autouse=True)
+def _qt_cleanup():
+    """Delete any top-level widgets after each test so Fluent's theme manager
+    never keeps references to a window from a previous test."""
+    yield
+    try:
+        from PyQt6.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app is not None:
+            for w in list(app.topLevelWidgets()):
+                w.deleteLater()
+            app.processEvents()
+            app.processEvents()
+    except Exception:
+        pass
+    import gc
+    gc.collect()
+
+
 @pytest.fixture
 def ios_report(tmp_path) -> dict:
     build_ios(tmp_path / "backup")
@@ -164,6 +183,8 @@ def test_qt_smoke(tmp_path):
     win.select_section("sec_contacts")
     assert win.table.rowCount() == 1
     app.processEvents()
+    win.deleteLater()
+    app.processEvents()
 
 
 def test_global_search(ios_report):
@@ -222,6 +243,8 @@ def test_multi_device(tmp_path):
     assert win.device_combo.count() == 2
     win._switch_device(0)
     assert win.report is win.devices[0]["report"]
+    app.processEvents()
+    win.deleteLater()
     app.processEvents()
 
 

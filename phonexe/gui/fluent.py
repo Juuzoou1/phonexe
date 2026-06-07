@@ -9,27 +9,35 @@ from __future__ import annotations
 
 try:
     from qfluentwidgets import (  # type: ignore
+        CardWidget,
         ComboBox,
+        FluentIcon,
         InfoBar,
         InfoBarPosition,
         LineEdit,
         PrimaryPushButton,
         PushButton,
         SearchLineEdit,
+        SimpleCardWidget,
+        SmoothScrollArea,
         TableWidget,
     )
     HAVE_FLUENT = True
 except Exception:  # pragma: no cover - lib optional
     from PyQt6.QtWidgets import (
         QComboBox as ComboBox,
+        QFrame as CardWidget,
+        QFrame as SimpleCardWidget,
         QLineEdit as LineEdit,
         QLineEdit as SearchLineEdit,
         QPushButton as PrimaryPushButton,
         QPushButton as PushButton,
+        QScrollArea as SmoothScrollArea,
         QTableWidget as TableWidget,
     )
     InfoBar = None
     InfoBarPosition = None
+    FluentIcon = None
     HAVE_FLUENT = False
 
 
