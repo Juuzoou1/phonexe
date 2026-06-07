@@ -1,12 +1,28 @@
-# phonexe — iOS Backup Forensic Analyzer
+# phonexe — Digital Forensics Platform
 
-`phonexe` is a digital-forensics tool that analyzes **iOS and Android** device
-data and produces structured, court-friendly reports (JSON + HTML) of the
-local artifacts they contain: contacts, messages, calls, browser history,
-photos (with EXIF/GPS), and chat apps such as WhatsApp, Instagram, Snapchat,
-Discord, Telegram and more.
+`phonexe` is a digital-forensics platform that analyzes **iOS and Android**
+device data and produces structured, court-friendly reports (JSON / HTML /
+PDF) of the local artifacts they contain — with a dark, bilingual desktop UI
+that renders each app the way it really looks.
 
-It is designed to be packaged as a single Windows executable (`phonexe.exe`).
+It is designed to be packaged as a single Windows executable (`phonexe.exe`),
+built automatically by CI.
+
+### Capabilities at a glance
+
+- **Acquisition:** iOS direct backup (`acquire-ios`, via Apple's own protocol),
+  Android live ADB pull, or analyze an existing backup / filesystem extraction.
+- **Decoding:** contacts, SMS/iMessage, calls, Safari + Chrome history, photos
+  (EXIF/GPS), calendar, notes, file inventory, WhatsApp, and Instagram /
+  Snapchat / Telegram / Discord / Signal / Messenger / TikTok.
+- **App-faithful views:** click an app to open its real-looking clone
+  (WhatsApp wallpaper + chat, Instagram feed + stories + DMs, …) with the
+  device's own conversations, inline media preview, and phone/desktop sizing.
+- **Analysis:** unified timeline, offline world map of all locations,
+  relationship/link analysis, cross-app contact unification, deleted-record
+  recovery (SQLite carving), global search, and evidence bookmarks.
+- **Case & integrity:** multi-device cases, chain-of-custody hashing, an audit
+  trail of every examiner action, and savable case files.
 
 ---
 
