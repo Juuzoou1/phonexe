@@ -133,46 +133,81 @@ class Donut(QWidget):
 
 
 class PhoneOutline(QWidget):
-    """A drawn iPhone outline mockup (rounded body, dynamic island, glow)."""
+    """A realistic, screen-lit smartphone mockup (titanium frame + glow)."""
 
     def __init__(self, glow: str = None):
         super().__init__()
-        self._glow = glow or theme.OK
-        self.setFixedSize(72, 142)
+        self.setFixedSize(86, 168)
 
     def paintEvent(self, _e):  # noqa: N802
-        from PyQt6.QtCore import QRectF
-        from PyQt6.QtGui import QPainterPath
+        from PyQt6.QtCore import QPointF, QRectF
+        from PyQt6.QtGui import QLinearGradient, QRadialGradient
 
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()
-        body = QRectF(8, 6, w - 16, h - 12)
-        radius = 14
+        body = QRectF(14, 8, w - 28, h - 16)
+        radius = 17
 
-        # soft green edge glow
-        for gw, alpha in ((7, 40), (3, 90)):
-            c = QColor(self._glow)
-            c.setAlpha(alpha)
-            pen = QPen(c, gw)
-            p.setPen(pen)
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(body, radius, radius)
-
-        # body + screen
-        p.setPen(QPen(QColor(self._glow), 1.5))
-        p.setBrush(QColor("#0a0f0d"))
-        p.drawRoundedRect(body, radius, radius)
-        screen = QRectF(body.x() + 3, body.y() + 3,
-                        body.width() - 6, body.height() - 6)
+        # soft ambient glow behind the lit phone (neutral cyan-white)
+        glow = QRadialGradient(QPointF(w / 2, h / 2), w * 0.7)
+        gc = QColor("#9fe9ff")
+        gc.setAlpha(70)
+        glow.setColorAt(0.0, gc)
+        gc2 = QColor("#9fe9ff")
+        gc2.setAlpha(0)
+        glow.setColorAt(1.0, gc2)
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QColor("#05080a"))
-        p.drawRoundedRect(screen, radius - 3, radius - 3)
+        p.setBrush(glow)
+        p.drawRoundedRect(QRectF(0, 0, w, h), radius, radius)
 
-        # dynamic island
-        island = QRectF(w / 2 - 11, body.y() + 8, 22, 7)
+        # titanium frame (metallic vertical gradient)
+        frame = QLinearGradient(body.x(), 0, body.right(), 0)
+        frame.setColorAt(0.0, QColor("#5b6166"))
+        frame.setColorAt(0.12, QColor("#9aa1a6"))
+        frame.setColorAt(0.5, QColor("#2b2f33"))
+        frame.setColorAt(0.88, QColor("#9aa1a6"))
+        frame.setColorAt(1.0, QColor("#41464a"))
+        p.setBrush(frame)
+        p.drawRoundedRect(body, radius, radius)
+
+        # side buttons
+        p.setBrush(QColor("#2b2f33"))
+        p.drawRoundedRect(QRectF(body.x() - 1.5, body.y() + 34, 2, 16), 1, 1)
+        p.drawRoundedRect(QRectF(body.x() - 1.5, body.y() + 54, 2, 22), 1, 1)
+        p.drawRoundedRect(QRectF(body.right() - 0.5, body.y() + 46, 2, 26), 1, 1)
+
+        # lit screen (wallpaper gradient)
+        screen = QRectF(body.x() + 4, body.y() + 4,
+                        body.width() - 8, body.height() - 8)
+        wp = QLinearGradient(screen.x(), screen.y(),
+                             screen.right(), screen.bottom())
+        wp.setColorAt(0.0, QColor("#2bd6ff"))
+        wp.setColorAt(0.45, QColor("#3a7bff"))
+        wp.setColorAt(1.0, QColor("#6f3cff"))
+        p.setBrush(wp)
+        p.drawRoundedRect(screen, radius - 4, radius - 4)
+
+        # glossy highlight on the screen
+        gloss = QLinearGradient(screen.x(), screen.y(),
+                                screen.x(), screen.center().y())
+        hc = QColor("#ffffff")
+        hc.setAlpha(70)
+        gloss.setColorAt(0.0, hc)
+        hc2 = QColor("#ffffff")
+        hc2.setAlpha(0)
+        gloss.setColorAt(1.0, hc2)
+        p.setBrush(gloss)
+        p.drawRoundedRect(QRectF(screen.x(), screen.y(),
+                                 screen.width(), screen.height() * 0.5),
+                          radius - 4, radius - 4)
+
+        # dynamic island with camera dot
+        island = QRectF(w / 2 - 13, screen.y() + 7, 26, 8)
         p.setBrush(QColor("#000000"))
-        p.drawRoundedRect(island, 3.5, 3.5)
+        p.drawRoundedRect(island, 4, 4)
+        p.setBrush(QColor("#0c2330"))
+        p.drawEllipse(QPointF(island.right() - 4, island.center().y()), 2, 2)
         p.end()
 
 
