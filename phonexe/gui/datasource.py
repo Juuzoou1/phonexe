@@ -351,6 +351,31 @@ def timeline(report: dict) -> list[dict]:
     return events
 
 
+def instagram_posts(report: dict) -> list[dict]:
+    """Feed posts for the Instagram view: shared images + device photos."""
+    posts = []
+    for conv in conversations(report, "instagram"):
+        for m in conv["messages"]:
+            if m.get("image"):
+                posts.append({
+                    "username": m.get("sender") or conv["title"],
+                    "image": m["image"],
+                    "caption": m.get("text"),
+                    "time": m.get("timestamp"),
+                    "likes": 1204,
+                })
+    for r in _records(report, "photos"):
+        if r.get("stored_at"):
+            posts.append({
+                "username": "camera",
+                "image": r["stored_at"],
+                "caption": None,
+                "time": (r.get("exif") or {}).get("DateTimeOriginal"),
+                "likes": 0,
+            })
+    return posts
+
+
 def stories(report: dict, app_key: str) -> list[dict]:
     """Image highlights ('stories') for an app: its in-chat media items."""
     out = []

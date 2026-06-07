@@ -726,9 +726,16 @@ class MainWindow(QWidget):
             convos.append(Conversation(title=c["title"], messages=msgs))
         story_items = stories(self.report, app_key) \
             if app_key in ("instagram", "snapchat") else None
-        view = ChatView(app_key, convos, story_items)
-        view.location_clicked.connect(self.open_map_dialog)
-        view.image_clicked.connect(self.open_image_dialog)
+        if app_key == "instagram":
+            from .datasource import instagram_posts
+            from .instaview import InstagramView
+            view = InstagramView(self.report, instagram_posts(self.report),
+                                 story_items, convos)
+            view.image_clicked.connect(self.open_image_dialog)
+        else:
+            view = ChatView(app_key, convos, story_items)
+            view.location_clicked.connect(self.open_map_dialog)
+            view.image_clicked.connect(self.open_image_dialog)
 
         # swap into the inline chat page
         while self.chat_container.count():
