@@ -362,6 +362,53 @@ def stories(report: dict, app_key: str) -> list[dict]:
     return out
 
 
+_STOPWORDS = {
+    "the", "and", "you", "for", "this", "that", "with", "have", "are", "was",
+    "في", "من", "على", "الى", "إلى", "عن", "مع", "هذا", "هذه", "اللي", "وش",
+    "يا", "ما", "لا", "ان", "أن", "هو", "هي", "كان", "تم", "الذي",
+}
+
+
+def keywords(report: dict, top: int = 12) -> list[tuple[str, int]]:
+    """Most frequent meaningful words across all message text."""
+    import re
+    from collections import Counter
+
+    counter: Counter = Counter()
+    texts: list[str] = []
+    for app in chat_apps(report):
+        for conv in conversations(report, app["key"]):
+            for m in conv["messages"]:
+                if m.get("text"):
+                    texts.append(str(m["text"]))
+    for t in texts:
+        for w in re.findall(r"[^\W\d_]{3,}", t, flags=re.UNICODE):
+            wl = w.lower()
+            if wl not in _STOPWORDS:
+                counter[w] += 1
+    return counter.most_common(top)
+
+
+def activity_by_source(report: dict) -> list[tuple[str, int]]:
+    """Message volume per source/app, for the activity bar chart."""
+    out: list[tuple[str, int]] = []
+    n = _count(report, "messages")
+    if n:
+        out.append(("SMS/iMessage", n))
+    if _count(report, "whatsapp"):
+        out.append(("WhatsApp", _count(report, "whatsapp")))
+    apps = _art(report, "social_apps").get("apps", {}) or {}
+    for app in apps.values():
+        total = sum(
+            t.get("count", 0)
+            for db in app.get("databases", [])
+            for t in db.get("tables", [])
+        )
+        if total:
+            out.append((app.get("name", "App"), total))
+    return out
+
+
 def section_table(report: dict, section: str
                   ) -> tuple[list[str], list[list[str]], str]:
     """Return (columns, rows, note) for a sidebar section."""

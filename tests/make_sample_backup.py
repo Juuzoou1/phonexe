@@ -136,7 +136,7 @@ def _make_whatsapp_builder(image_path: str):
             "'1@s.whatsapp.net','me',1,NULL,NULL,NULL)", (_T,))
         con.execute(
             "INSERT INTO ZWAMESSAGE VALUES(2,'موقعي الحين',?,0,"
-            "'1@s.whatsapp.net','me',1,24.7136,46.6753,NULL)", (_T + 60,))
+            "'1@s.whatsapp.net','me',1,25.2854,51.5310,NULL)", (_T + 60,))
         con.execute(
             "INSERT INTO ZWAMESSAGE VALUES(3,'شوف الصورة',?,1,'me',"
             "'1@s.whatsapp.net',1,NULL,NULL,1)", (_T + 120,))
@@ -160,7 +160,7 @@ def _make_instagram_builder(image_path: str):
         )
         con.execute(
             "INSERT INTO direct_messages VALUES"
-            "(2,'هنا الكافيه',1685620900,'sara',21.4225,39.8262,NULL)"
+            "(2,'هنا الكافيه',1685620900,'sara',25.2760,51.5200,NULL)"
         )
         con.execute(
             "INSERT INTO direct_messages VALUES"

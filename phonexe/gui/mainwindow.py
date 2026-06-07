@@ -316,6 +316,11 @@ class MainWindow(QWidget):
         self.apps_scroll.setWidget(self.apps_inner)
         self.content_stack.addWidget(self.apps_scroll)     # index 2
 
+        self.dash_holder = QWidget()
+        self.dash_layout = QVBoxLayout(self.dash_holder)
+        self.dash_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_stack.addWidget(self.dash_holder)     # index 3
+
         cp.addWidget(self.content_stack, 1)
         lay.addWidget(content, 1)
         return wrap
@@ -538,6 +543,16 @@ class MainWindow(QWidget):
         report = self.report or {"artifacts": {}}
         section = self.current_section
 
+        # rich overview dashboard
+        if section == "sec_overview":
+            self.note_lbl.setVisible(False)
+            self.search_box.setVisible(False)
+            self.section_title_lbl.setVisible(False)
+            self._build_overview(report)
+            self.content_stack.setCurrentIndex(3)
+            return
+        self.section_title_lbl.setVisible(True)
+
         # apps grid
         if section == "sec_apps":
             self.note_lbl.setVisible(False)
@@ -571,6 +586,18 @@ class MainWindow(QWidget):
         self.table.setHorizontalHeaderLabels(cols)
         self._fill_rows(rows)
         self.content_stack.setCurrentIndex(0)
+
+    def _build_overview(self, report: dict):
+        from .dashboard import build_dashboard
+
+        while self.dash_layout.count():
+            item = self.dash_layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+        dash = build_dashboard(
+            report, self.open_app_chat, self.open_image_dialog
+        )
+        self.dash_layout.addWidget(dash)
 
     def _build_apps_grid(self, report: dict):
         while self.apps_grid.count():
