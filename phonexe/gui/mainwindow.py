@@ -42,7 +42,7 @@ from .datasource import (
 )
 from .i18n import Lang, tr
 from .mapview import MapMarker, OfflineMap
-from .widgets import Donut, StatCard, hline
+from .widgets import Donut, StatCard, apply_glow, hline
 
 # (section key, glyph) for the left sidebar.
 _SECTIONS = [
@@ -265,6 +265,7 @@ class MainWindow(QWidget):
         self.stat_cards: list[StatCard] = []
         for i in range(6):
             card = StatCard("0", "", theme.STAT_COLORS[i])
+            apply_glow(card, blur=20, alpha=30)
             self.stat_cards.append(card)
             self.stats_grid.addWidget(card, 0, i)
         sp.addLayout(self.stats_grid)

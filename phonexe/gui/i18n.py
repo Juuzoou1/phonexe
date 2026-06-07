@@ -47,7 +47,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "stat_photos": {"ar": "الصور", "en": "Photos"},
     "stat_calls": {"ar": "المكالمات", "en": "Calls"},
     "stat_contacts": {"ar": "جهات الاتصال", "en": "Contacts"},
+    "stat_videos": {"ar": "الفيديوهات", "en": "Videos"},
     "stat_files": {"ar": "ملفات", "en": "Files"},
+    "stat_deleted": {"ar": "المحذوفات", "en": "Deleted"},
     # ---- device info fields ----
     "f_name": {"ar": "اسم الجهاز", "en": "Device Name"},
     "f_os": {"ar": "نظام التشغيل", "en": "Operating System"},

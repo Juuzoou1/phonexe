@@ -2,21 +2,32 @@
 
 from __future__ import annotations
 
-# Core palette — exact values from the approved design spec.
+# Core palette — exact values from the approved design brief.
 BG = "#050B12"          # window background
-PANEL = "#08121D"       # card / panel background
-PANEL_ALT = "#0a1622"   # slightly lighter panel for contrast rows
-BORDER = "#112436"      # subtle borders
-TEXT = "#D8F7FF"        # primary text
-TEXT_DIM = "#7EA0B8"    # secondary text
-ACCENT = "#4FE3E0"      # accent (teal/cyan)
+PANEL = "#08121D"       # main panels
+CARD = "#0D1724"        # cards / inner surfaces
+PANEL_ALT = CARD        # alias used across the UI
+BORDER = "#14283D"      # borders
+TEXT = "#F4F8FC"        # text primary
+TEXT_DIM = "#90A6BC"    # text secondary
+ACCENT = "#4FE3E0"      # primary accent (cyan)
+ACCENT2 = "#24A8FF"     # secondary accent (blue)
 ACCENT_DIM = "#1f7e7c"  # darker accent
-DANGER = "#ef4444"      # red (end exam, deleted)
-OK = "#22c55e"          # green (connected)
-WARN = "#f59e0b"
+OK = "#21D07A"          # success / connected
+WARN = "#F7B731"        # warning
+DANGER = "#FF5B5B"      # danger / end exam / deleted
 
-# Preferred font stack (Arabic-friendly), falling back gracefully.
-FONT_STACK = "'Cairo', 'IBM Plex Sans Arabic', 'Segoe UI', 'Tahoma', 'Arial'"
+# Corner radii (px) from the brief.
+RADIUS_CARD = 12
+RADIUS_BTN = 10
+RADIUS_INPUT = 8
+
+# Soft cyan glow used on key panels.
+GLOW = "rgba(79,227,224,0.08)"
+
+# Preferred font stack — IBM Plex Sans Arabic primary, per the brief.
+FONT_STACK = ("'IBM Plex Sans Arabic', 'Cairo', 'Segoe UI', "
+              "'Tahoma', 'Arial'")
 
 # Stat-card numbers are the teal accent in the design, with one warm accent.
 STAT_COLORS = [ACCENT, ACCENT, ACCENT, "#7EA0B8", ACCENT, ACCENT]
@@ -73,7 +84,7 @@ QPushButton#sectionBtn:checked {{
 /* ---- buttons ---- */
 QPushButton#primary {{
     background: {ACCENT_DIM}; color: {TEXT}; border: 1px solid {ACCENT};
-    border-radius: 8px; padding: 9px 16px; font-weight: 600;
+    border-radius: 10px; padding: 9px 16px; font-weight: 600;
 }}
 QPushButton#primary:hover {{ background: {ACCENT}; color: {BG}; }}
 QPushButton#ghost {{

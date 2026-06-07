@@ -17,8 +17,21 @@ from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
 from . import theme
 
-_AVATAR_COLORS = ["#22d3ee", "#34d399", "#a78bfa", "#f472b6", "#fbbf24",
-                  "#f87171", "#60a5fa", "#fb923c"]
+_AVATAR_COLORS = ["#4FE3E0", "#24A8FF", "#21D07A", "#F7B731", "#FF5B5B",
+                  "#a78bfa", "#60a5fa", "#fb923c"]
+
+
+def apply_glow(widget, color: str = None, blur: int = 24, alpha: int = 60):
+    """Attach a soft cyan glow (drop shadow, no offset) to a widget."""
+    from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+
+    eff = QGraphicsDropShadowEffect(widget)
+    eff.setBlurRadius(blur)
+    eff.setOffset(0, 0)
+    c = QColor(color or theme.ACCENT)
+    c.setAlpha(alpha)
+    eff.setColor(c)
+    widget.setGraphicsEffect(eff)
 
 
 def avatar_pixmap(text: str, size: int = 40) -> QPixmap:

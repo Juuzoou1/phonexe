@@ -44,9 +44,9 @@ def overview_stats(report: dict) -> list[tuple[str, int]]:
         ("stat_apps", _social_app_count(report)),
         ("stat_messages", messages),
         ("stat_photos", _count(report, "photos")),
-        ("stat_calls", _count(report, "calls")),
-        ("stat_contacts", _count(report, "contacts")),
+        ("stat_videos", 0),
         ("stat_files", files),
+        ("stat_deleted", _count(report, "deleted")),
     ]
 
 

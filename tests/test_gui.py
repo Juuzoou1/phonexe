@@ -38,10 +38,13 @@ def test_detect_platform(tmp_path):
 
 def test_overview_stats(ios_report):
     stats = dict(overview_stats(ios_report))
-    assert stats["stat_contacts"] == 1
+    # six brief-defined cards
+    assert {"stat_apps", "stat_messages", "stat_photos", "stat_videos",
+            "stat_files", "stat_deleted"} == set(stats)
     # messages = SMS/iMessage (2) + WhatsApp (12) + social apps (10)
     assert stats["stat_messages"] == 24
     assert stats["stat_apps"] >= 1
+    assert stats["stat_deleted"] >= 2
 
 
 def test_device_summary(ios_report):

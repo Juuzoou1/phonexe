@@ -176,8 +176,16 @@ def _whatsapp_panel(report, on_open) -> QFrame:
     hl.addLayout(tabs)
     outer.addWidget(header)
 
+    # search bar
+    search = QLabel("🔍  بحث في المحادثات")
+    search.setStyleSheet(
+        f"background:{theme.CARD};color:{theme.TEXT_DIM};"
+        f"border:1px solid {theme.BORDER};border-radius:8px;"
+        f"padding:8px 12px;margin:8px;")
+    outer.addWidget(search)
+
     body = QVBoxLayout()
-    body.setContentsMargins(8, 6, 8, 10)
+    body.setContentsMargins(8, 0, 8, 10)
     body.setSpacing(2)
     convos = conversations(report, "whatsapp")
     for idx, conv in enumerate(convos[:6]):

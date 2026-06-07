@@ -11,24 +11,34 @@ except Exception:  # pragma: no cover
 
 _loaded = False
 
+# Loaded in order; IBM Plex Sans Arabic is the design's primary font.
+_FONT_FILES = [
+    "IBMPlexSansArabic-Light.ttf",
+    "IBMPlexSansArabic-Regular.ttf",
+    "IBMPlexSansArabic-Medium.ttf",
+    "IBMPlexSansArabic-SemiBold.ttf",
+    "IBMPlexSansArabic-Bold.ttf",
+    "Cairo.ttf",
+]
+
+
+def _read(rel: str) -> bytes:
+    if _res_files is not None:
+        return _res_files("phonexe.gui").joinpath(rel).read_bytes()
+    from pathlib import Path  # pragma: no cover
+    return (Path(__file__).parent / rel.replace("/", "/")).read_bytes()
+
 
 def load_fonts() -> None:
-    """Register the bundled Cairo TTF with Qt (idempotent)."""
+    """Register the bundled UI fonts with Qt (idempotent)."""
     global _loaded
     if _loaded:
         return
     _loaded = True
-    try:
-        if _res_files is not None:
-            data = (
-                _res_files("phonexe.gui")
-                .joinpath("assets/fonts/Cairo.ttf")
-                .read_bytes()
+    for name in _FONT_FILES:
+        try:
+            QFontDatabase.addApplicationFontFromData(
+                _read(f"assets/fonts/{name}")
             )
-        else:  # pragma: no cover
-            from pathlib import Path
-            data = (Path(__file__).parent / "assets" / "fonts"
-                    / "Cairo.ttf").read_bytes()
-        QFontDatabase.addApplicationFontFromData(data)
-    except Exception:
-        pass  # fall back to the CSS font stack
+        except Exception:
+            pass  # fall back to the CSS font stack
