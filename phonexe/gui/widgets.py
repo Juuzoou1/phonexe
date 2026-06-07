@@ -133,11 +133,15 @@ class Donut(QWidget):
 
 
 class PhoneOutline(QWidget):
-    """A realistic, screen-lit smartphone mockup (titanium frame + glow)."""
+    """A near-realistic, screen-lit smartphone with a tiny live home screen."""
+
+    _ICON_COLORS = ["#25D366", "#E1306C", "#229ED9", "#FFCC00", "#FF5B5B",
+                    "#34DA50", "#5865F2", "#1DA1F2", "#0084FF", "#FE2C55",
+                    "#21D07A", "#9b59ff"]
 
     def __init__(self, glow: str = None):
         super().__init__()
-        self.setFixedSize(86, 168)
+        self.setFixedSize(104, 204)
 
     def paintEvent(self, _e):  # noqa: N802
         from PyQt6.QtCore import QPointF, QRectF
@@ -146,67 +150,104 @@ class PhoneOutline(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()
-        body = QRectF(14, 8, w - 28, h - 16)
-        radius = 17
-
-        # soft ambient glow behind the lit phone (neutral cyan-white)
-        glow = QRadialGradient(QPointF(w / 2, h / 2), w * 0.7)
-        gc = QColor("#9fe9ff")
-        gc.setAlpha(70)
-        glow.setColorAt(0.0, gc)
-        gc2 = QColor("#9fe9ff")
-        gc2.setAlpha(0)
-        glow.setColorAt(1.0, gc2)
         p.setPen(Qt.PenStyle.NoPen)
+        body = QRectF(16, 10, w - 32, h - 22)
+        radius = 20
+
+        # contact shadow under the device
+        for sw, alpha in ((18, 50), (10, 70)):
+            sc = QColor(0, 0, 0, alpha)
+            p.setBrush(sc)
+            p.drawRoundedRect(QRectF(body.x() + 4, body.bottom() - 6 + sw / 4,
+                                     body.width() - 8, 14), 10, 10)
+
+        # ambient screen glow
+        glow = QRadialGradient(QPointF(w / 2, h * 0.45), w * 0.75)
+        gc = QColor("#7fd8ff")
+        gc.setAlpha(60)
+        glow.setColorAt(0.0, gc)
+        glow.setColorAt(1.0, QColor(127, 216, 255, 0))
         p.setBrush(glow)
         p.drawRoundedRect(QRectF(0, 0, w, h), radius, radius)
 
-        # titanium frame (metallic vertical gradient)
-        frame = QLinearGradient(body.x(), 0, body.right(), 0)
-        frame.setColorAt(0.0, QColor("#5b6166"))
-        frame.setColorAt(0.12, QColor("#9aa1a6"))
-        frame.setColorAt(0.5, QColor("#2b2f33"))
-        frame.setColorAt(0.88, QColor("#9aa1a6"))
-        frame.setColorAt(1.0, QColor("#41464a"))
-        p.setBrush(frame)
+        # titanium rail
+        rail = QLinearGradient(body.x(), 0, body.right(), 0)
+        for stop, col in ((0.0, "#6c7276"), (0.08, "#b9c0c4"), (0.18, "#454a4e"),
+                          (0.5, "#23272a"), (0.82, "#454a4e"),
+                          (0.92, "#b9c0c4"), (1.0, "#5a6064")):
+            rail.setColorAt(stop, QColor(col))
+        p.setBrush(rail)
         p.drawRoundedRect(body, radius, radius)
 
         # side buttons
-        p.setBrush(QColor("#2b2f33"))
-        p.drawRoundedRect(QRectF(body.x() - 1.5, body.y() + 34, 2, 16), 1, 1)
-        p.drawRoundedRect(QRectF(body.x() - 1.5, body.y() + 54, 2, 22), 1, 1)
-        p.drawRoundedRect(QRectF(body.right() - 0.5, body.y() + 46, 2, 26), 1, 1)
+        p.setBrush(QColor("#202427"))
+        p.drawRoundedRect(QRectF(body.x() - 1.5, body.y() + 42, 2.2, 14), 1, 1)
+        p.drawRoundedRect(QRectF(body.x() - 1.5, body.y() + 64, 2.2, 26), 1, 1)
+        p.drawRoundedRect(QRectF(body.right() - 0.7, body.y() + 58, 2.2, 30), 1, 1)
 
-        # lit screen (wallpaper gradient)
-        screen = QRectF(body.x() + 4, body.y() + 4,
-                        body.width() - 8, body.height() - 8)
+        # black bezel
+        bezel = QRectF(body.x() + 3.5, body.y() + 3.5,
+                       body.width() - 7, body.height() - 7)
+        p.setBrush(QColor("#050608"))
+        p.drawRoundedRect(bezel, radius - 3, radius - 3)
+
+        # lit wallpaper
+        screen = QRectF(bezel.x() + 2, bezel.y() + 2,
+                        bezel.width() - 4, bezel.height() - 4)
+        p.save()
+        clip = QPainterPath()
+        clip.addRoundedRect(screen, radius - 5, radius - 5)
+        p.setClipPath(clip)
         wp = QLinearGradient(screen.x(), screen.y(),
                              screen.right(), screen.bottom())
-        wp.setColorAt(0.0, QColor("#2bd6ff"))
-        wp.setColorAt(0.45, QColor("#3a7bff"))
-        wp.setColorAt(1.0, QColor("#6f3cff"))
-        p.setBrush(wp)
-        p.drawRoundedRect(screen, radius - 4, radius - 4)
+        wp.setColorAt(0.0, QColor("#0b2a4a"))
+        wp.setColorAt(0.5, QColor("#123a78"))
+        wp.setColorAt(1.0, QColor("#3a1d6e"))
+        p.fillRect(screen, wp)
 
-        # glossy highlight on the screen
-        gloss = QLinearGradient(screen.x(), screen.y(),
-                                screen.x(), screen.center().y())
-        hc = QColor("#ffffff")
-        hc.setAlpha(70)
-        gloss.setColorAt(0.0, hc)
-        hc2 = QColor("#ffffff")
-        hc2.setAlpha(0)
-        gloss.setColorAt(1.0, hc2)
-        p.setBrush(gloss)
-        p.drawRoundedRect(QRectF(screen.x(), screen.y(),
-                                 screen.width(), screen.height() * 0.5),
-                          radius - 4, radius - 4)
+        # mini home-screen app grid
+        cols, rows = 4, 5
+        pad = 8
+        gx0 = screen.x() + pad
+        gw = (screen.width() - 2 * pad)
+        cell = gw / cols
+        icon = cell * 0.66
+        top = screen.y() + 18
+        idx = 0
+        for r in range(rows):
+            for c in range(cols):
+                cx = gx0 + c * cell + (cell - icon) / 2
+                cy = top + r * cell
+                p.setBrush(QColor(self._ICON_COLORS[idx % len(self._ICON_COLORS)]))
+                p.drawRoundedRect(QRectF(cx, cy, icon, icon),
+                                  icon * 0.28, icon * 0.28)
+                idx += 1
+        # dock
+        dock = QRectF(screen.x() + 6, screen.bottom() - cell - 4,
+                      screen.width() - 12, cell)
+        p.setBrush(QColor(255, 255, 255, 35))
+        p.drawRoundedRect(dock, 12, 12)
+        for c in range(cols):
+            cx = dock.x() + 6 + c * ((dock.width() - 12) / cols) + \
+                (((dock.width() - 12) / cols) - icon) / 2
+            cy = dock.y() + (dock.height() - icon) / 2
+            p.setBrush(QColor(self._ICON_COLORS[(idx + c) % len(self._ICON_COLORS)]))
+            p.drawRoundedRect(QRectF(cx, cy, icon, icon),
+                              icon * 0.28, icon * 0.28)
 
-        # dynamic island with camera dot
-        island = QRectF(w / 2 - 13, screen.y() + 7, 26, 8)
+        # diagonal glass reflection
+        refl = QLinearGradient(screen.x(), screen.y(),
+                               screen.right(), screen.bottom())
+        refl.setColorAt(0.0, QColor(255, 255, 255, 60))
+        refl.setColorAt(0.25, QColor(255, 255, 255, 0))
+        p.fillRect(screen, refl)
+        p.restore()
+
+        # dynamic island
+        island = QRectF(w / 2 - 14, screen.y() + 6, 28, 8)
         p.setBrush(QColor("#000000"))
         p.drawRoundedRect(island, 4, 4)
-        p.setBrush(QColor("#0c2330"))
+        p.setBrush(QColor("#16323f"))
         p.drawEllipse(QPointF(island.right() - 4, island.center().y()), 2, 2)
         p.end()
 
