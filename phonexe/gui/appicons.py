@@ -194,7 +194,19 @@ _PAINTERS = {
 
 
 def app_pixmap(key: str, size: int = 48) -> QPixmap:
-    """Return a QPixmap logo for *key* (falls back to a lettered badge)."""
+    """Return a QPixmap logo for *key*.
+
+    Prefers the official-style SVG brand badge (Simple Icons); falls back to
+    the hand-drawn vector logo, then a lettered badge.
+    """
+    try:
+        from .svgicons import app_icon
+        svg_pix = app_icon(key, size)
+        if svg_pix is not None:
+            return svg_pix
+    except Exception:
+        pass
+
     pix = QPixmap(size, size)
     pix.fill(Qt.GlobalColor.transparent)
     p = QPainter(pix)

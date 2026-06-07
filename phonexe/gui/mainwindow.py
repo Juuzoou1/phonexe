@@ -6,7 +6,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QApplication,
     QDialog,
@@ -44,22 +45,26 @@ from .i18n import Lang, tr
 from .mapview import MapMarker, OfflineMap
 from .widgets import Donut, StatCard, apply_glow, hline
 
-# (section key, glyph) for the left sidebar.
+# (section key, Lucide icon name) for the left sidebar.
 _SECTIONS = [
-    ("sec_overview", "⌂"),
-    ("sec_apps", "▦"),
-    ("sec_messages", "✉"),
-    ("sec_media", "▣"),
-    ("sec_location", "◎"),
-    ("sec_calls", "☎"),
-    ("sec_contacts", "☰"),
-    ("sec_browser", "◐"),
-    ("sec_timeline", "⏱"),
-    ("sec_accounts", "⚿"),
-    ("sec_deleted", "✗"),
+    ("sec_overview", "layout-dashboard"),
+    ("sec_apps", "layout-grid"),
+    ("sec_messages", "message-circle"),
+    ("sec_media", "image"),
+    ("sec_location", "map-pin"),
+    ("sec_calls", "phone"),
+    ("sec_contacts", "users"),
+    ("sec_browser", "globe"),
+    ("sec_timeline", "clock"),
+    ("sec_accounts", "key-round"),
+    ("sec_deleted", "trash-2"),
 ]
 
 _NAV = ["nav_dashboard", "nav_extract", "nav_analyze", "nav_reports", "nav_tools"]
+_NAV_ICON = {
+    "nav_dashboard": "layout-dashboard", "nav_extract": "download",
+    "nav_analyze": "search", "nav_reports": "file-text", "nav_tools": "settings",
+}
 
 
 class AnalyzeWorker(QThread):
@@ -247,11 +252,13 @@ class MainWindow(QWidget):
         lay.addWidget(self.sections_lbl)
 
         self.section_btns: dict[str, QPushButton] = {}
-        for key, glyph in _SECTIONS:
+        self.section_icons: dict[str, str] = {}
+        for key, icon_name in _SECTIONS:
             b = QPushButton()
             b.setObjectName("sectionBtn")
             b.setCheckable(True)
-            b.setProperty("glyph", glyph)
+            b.setIconSize(QSize(18, 18))
+            self.section_icons[key] = icon_name
             b.clicked.connect(lambda _=False, k=key: self.select_section(k))
             self.section_btns[key] = b
             lay.addWidget(b)
@@ -424,8 +431,11 @@ class MainWindow(QWidget):
         )
         self.title_lbl.setText(tr("app_title"))
         self.subtitle_lbl.setText(f"{tr('app_subtitle')}   v{__version__}")
+        from .svgicons import nav_icon
         for key, btn in self.nav_btns.items():
-            btn.setText(tr(key))
+            btn.setText("  " + tr(key))
+            btn.setIcon(QIcon(nav_icon(_NAV_ICON[key], 18)))
+            btn.setIconSize(QSize(18, 18))
         self.lang_btn.setText(tr("language"))
         self.connected_lbl.setText(tr("connected_device"))
         self.dev_status_lbl.setText("● " + tr("connected"))
@@ -434,8 +444,8 @@ class MainWindow(QWidget):
         self.open_report_btn.setText(tr("open_report"))
         self.sections_lbl.setText(tr("main_sections"))
         for key, btn in self.section_btns.items():
-            glyph = btn.property("glyph")
-            btn.setText(f"  {glyph}   {tr(key)}")
+            btn.setText("   " + tr(key))
+        self._refresh_section_icons()
         self.end_btn.setText(tr("end_exam"))
         self.stats_title_lbl.setText(tr("stats_title"))
         self.refresh_btn.setText(tr("refresh"))
@@ -467,10 +477,17 @@ class MainWindow(QWidget):
             self.nav_btns["nav_dashboard"].setChecked(True)
             self.nav_btns["nav_tools"].setChecked(False)
 
+    def _refresh_section_icons(self):
+        from .svgicons import nav_icon
+        for key, btn in self.section_btns.items():
+            color = theme.ACCENT if key == self.current_section else "#BFD5E6"
+            btn.setIcon(QIcon(nav_icon(self.section_icons[key], 18, color)))
+
     def select_section(self, key: str):
         self.current_section = key
         for k, b in self.section_btns.items():
             b.setChecked(k == key)
+        self._refresh_section_icons()
         self.section_title_lbl.setText(tr(key))
         self.refresh_views()
 
