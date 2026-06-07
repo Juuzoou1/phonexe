@@ -505,6 +505,78 @@ def global_search(report: dict, query: str, limit: int = 500) -> list[dict]:
     return results
 
 
+def link_analysis(report: dict) -> list[dict]:
+    """Communication graph: who the device owner interacted with, ranked."""
+    from collections import Counter
+    edges: Counter = Counter()
+    for app in chat_apps(report):
+        name = app["name"]
+        for conv in conversations(report, app["key"]):
+            edges[(conv["title"] or "?", name)] += len(conv["messages"])
+    for c in _records(report, "calls"):
+        if c.get("number"):
+            edges[(c["number"], "Calls")] += 1
+    rows = [{"counterpart": k[0], "app": k[1], "interactions": v}
+            for k, v in edges.items()]
+    rows.sort(key=lambda r: -r["interactions"])
+    return rows
+
+
+def unified_contacts(report: dict) -> list[dict]:
+    """Merge identities across contacts, chat apps and calls.
+
+    Groups by a normalized name (with a contains-match pass so e.g. a chat
+    titled "Sara" folds into the contact "Sara Ahmed"), tracking every app the
+    identity appears in and total interactions.
+    """
+    identities: dict[str, dict] = {}
+
+    def get(name: str) -> dict:
+        key = name.lower().strip()
+        # fold into an existing identity if one name contains the other
+        for k, v in identities.items():
+            if key and (key in k or k in key):
+                return v
+        return identities.setdefault(
+            key, {"name": name, "phones": set(), "emails": set(),
+                  "apps": set(), "interactions": 0})
+
+    for c in _records(report, "contacts"):
+        name = c.get("name") or ((c.get("phones") or [""])[0])
+        if not name:
+            continue
+        idt = get(name)
+        if len(name) > len(idt["name"]):
+            idt["name"] = name        # prefer the fuller name
+        for p in c.get("phones", []) or []:
+            idt["phones"].add(p)
+        for e in c.get("emails", []) or []:
+            idt["emails"].add(e)
+        idt["apps"].add("Contacts")
+
+    for app in chat_apps(report):
+        for conv in conversations(report, app["key"]):
+            if conv["title"]:
+                idt = get(conv["title"])
+                idt["apps"].add(app["name"])
+                idt["interactions"] += len(conv["messages"])
+
+    for c in _records(report, "calls"):
+        if c.get("number"):
+            idt = get(c["number"])
+            idt["apps"].add("Calls")
+            idt["interactions"] += 1
+
+    out = [{
+        "identity": v["name"],
+        "phones": ", ".join(sorted(v["phones"])),
+        "apps": ", ".join(sorted(v["apps"])),
+        "interactions": v["interactions"],
+    } for v in identities.values()]
+    out.sort(key=lambda x: -x["interactions"])
+    return out
+
+
 def section_table(report: dict, section: str
                   ) -> tuple[list[str], list[list[str]], str]:
     """Return (columns, rows, note) for a sidebar section."""
@@ -549,6 +621,12 @@ def section_table(report: dict, section: str
         cols, rows = _to_table(_records(report, "notes"), ["title", "content"])
     elif section == "sec_files":
         cols, rows = _to_table(_records(report, "files"), ["domain", "path"])
+    elif section == "sec_links":
+        cols, rows = _to_table(link_analysis(report),
+                               ["counterpart", "app", "interactions"])
+    elif section == "sec_identities":
+        cols, rows = _to_table(unified_contacts(report),
+                               ["identity", "phones", "apps", "interactions"])
     else:
         cols, rows = [], []
     return cols, rows, note

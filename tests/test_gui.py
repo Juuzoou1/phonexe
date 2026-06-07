@@ -177,3 +177,28 @@ def test_new_sections(ios_report):
     for sec in ("sec_calendar", "sec_notes", "sec_files"):
         cols, rows, _ = section_table(ios_report, sec)
         assert cols  # has columns
+
+
+def test_link_analysis(ios_report):
+    from phonexe.gui.datasource import link_analysis
+    rows = link_analysis(ios_report)
+    assert rows and rows[0]["interactions"] >= rows[-1]["interactions"]
+    assert {"counterpart", "app", "interactions"} <= set(rows[0])
+
+
+def test_unified_contacts(ios_report):
+    from phonexe.gui.datasource import unified_contacts
+    ids = unified_contacts(ios_report)
+    # "Sara" chat folds into contact "Sara Ahmed"
+    sara = next((i for i in ids if "Sara" in i["identity"]), None)
+    assert sara and "Contacts" in sara["apps"] and "WhatsApp" in sara["apps"]
+
+
+def test_audit_log():
+    from phonexe.audit import AuditLog
+    a = AuditLog("examiner1")
+    a.record("test_action", "detail")
+    rows = a.as_rows()
+    assert rows[0]["action"] == "examination_started"
+    assert any(r["action"] == "test_action" for r in rows)
+    assert all("timestamp" in r for r in rows)

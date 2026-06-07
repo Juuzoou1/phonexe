@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .. import __version__, analyze
+from ..audit import AuditLog
 from ..reporting import report as reporting
 from . import theme
 from .chatview import ChatMessage, ChatView, Conversation, theme_for
@@ -59,9 +60,12 @@ _SECTIONS = [
     ("sec_notes", "file-text"),
     ("sec_files", "file"),
     ("sec_timeline", "clock"),
+    ("sec_links", "share-2"),
+    ("sec_identities", "contact-round"),
     ("sec_accounts", "key-round"),
     ("sec_deleted", "trash-2"),
     ("sec_bookmarks", "bookmark"),
+    ("sec_audit", "history"),
 ]
 
 _NAV = ["nav_dashboard", "nav_extract", "nav_analyze", "nav_reports", "nav_tools"]
@@ -99,6 +103,7 @@ class MainWindow(QWidget):
         self.bookmarks: list[dict] = []
         self._current_cols: list[str] = []
         self._search_results: list[dict] = []
+        self.audit = AuditLog()
         self._worker: AnalyzeWorker | None = None
 
         self.setWindowTitle("phonexe")
@@ -592,6 +597,7 @@ class MainWindow(QWidget):
 
     def _build_tools_page(self):
         lay = self._nav_panel(tr("tools_title"))
+        lay.addWidget(self._big_btn(tr("save_case"), self.save_case))
         lay.addWidget(self._big_btn(tr("language"), self.toggle_language, False))
         about = QLabel(f"phonexe v{__version__}\n\n{tr('scope_note')}")
         about.setObjectName("noteLabel")
@@ -652,6 +658,8 @@ class MainWindow(QWidget):
         self.report = report
         self.donut.set_percent(100)
         self.add_event(tr("completed"))
+        src = (report.get("meta", {}) or {}).get("source_path", "")
+        self.audit.record("evidence_loaded", src)
         self.refresh_views()
 
     def _on_failed(self, msg: str):
@@ -759,6 +767,22 @@ class MainWindow(QWidget):
             self.content_stack.setCurrentIndex(0)
             return
 
+        # audit log
+        if section == "sec_audit":
+            self.search_box.setVisible(False)
+            self.note_lbl.setVisible(False)
+            cols = ["timestamp", "action", "detail"]
+            rows = [[e["timestamp"], e["action"], e["detail"]]
+                    for e in self.audit.as_rows()]
+            self._current_cols = cols
+            self._all_rows = rows
+            self.table.clear()
+            self.table.setColumnCount(len(cols))
+            self.table.setHorizontalHeaderLabels(cols)
+            self._fill_rows(rows)
+            self.content_stack.setCurrentIndex(0)
+            return
+
         # global search results
         if section == "sec_search":
             self.search_box.setVisible(False)
@@ -794,6 +818,7 @@ class MainWindow(QWidget):
             return
         from .datasource import global_search
         self._search_results = global_search(self.report, q)
+        self.audit.record("search", q)
         self.current_section = "sec_search"
         for b in self.section_btns.values():
             b.setChecked(False)
@@ -810,6 +835,7 @@ class MainWindow(QWidget):
         data = "  ·  ".join(x for x in self._all_rows[r] if x)[:200]
         self.bookmarks.append({"section": tr(self.current_section),
                                "data": data})
+        self.audit.record("bookmark_added", data[:80])
         QMessageBox.information(self, "phonexe",
                                tr("sec_bookmarks") + " ✓")
 
@@ -1019,7 +1045,25 @@ class MainWindow(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "phonexe", str(e))
             return
+        self.audit.record("report_exported", f"{fmt}: {path}")
         QMessageBox.information(self, "phonexe", str(path))
+
+    def save_case(self):
+        if not self.report:
+            QMessageBox.information(self, "phonexe", tr("no_data"))
+            return
+        out = QFileDialog.getExistingDirectory(self, tr("save_case"))
+        if not out:
+            return
+        out_dir = Path(out)
+        case = dict(self.report)
+        case["bookmarks"] = self.bookmarks
+        case.setdefault("meta", {})["audit"] = self.audit.as_rows()
+        reporting.write_json(case, out_dir / "case.phonexe.json")
+        self.audit.save(out_dir / "audit.json")
+        self.audit.record("case_saved", str(out_dir))
+        QMessageBox.information(self, "phonexe",
+                               str(out_dir / "case.phonexe.json"))
 
     def end_examination(self):
         self.report = None
