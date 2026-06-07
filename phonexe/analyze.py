@@ -13,6 +13,7 @@ from pathlib import Path
 from . import __version__
 from .android import calendar as a_calendar
 from .android import calls as a_calls
+from .android import chrome as a_chrome
 from .android import contacts as a_contacts
 from .android import deleted as a_deleted
 from .android import files as a_files
@@ -25,6 +26,7 @@ from .backup import IOSBackup
 from .extractors import (
     calendar,
     calls,
+    chrome,
     contacts,
     deleted,
     files,
@@ -34,10 +36,10 @@ from .extractors import (
     safari,
 )
 
-_IOS_EXTRACTORS = [contacts, messages, calls, safari, whatsapp, social, photos,
-                   calendar, notes, files, deleted]
-_ANDROID_EXTRACTORS = [a_contacts, a_messages, a_calls, a_whatsapp, a_social,
-                       a_calendar, a_files, a_deleted]
+_IOS_EXTRACTORS = [contacts, messages, calls, safari, chrome, whatsapp, social,
+                   photos, calendar, notes, files, deleted]
+_ANDROID_EXTRACTORS = [a_contacts, a_messages, a_calls, a_chrome, a_whatsapp,
+                       a_social, a_calendar, a_files, a_deleted]
 
 
 def detect_platform(path: str | Path) -> str | None:

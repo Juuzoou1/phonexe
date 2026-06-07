@@ -16,6 +16,7 @@ from pathlib import Path
 from . import __version__
 from .android import calendar as a_calendar
 from .android import calls as a_calls
+from .android import chrome as a_chrome
 from .android import contacts as a_contacts
 from .android import deleted as a_deleted
 from .android import files as a_files
@@ -28,6 +29,7 @@ from .backup import BackupError, IOSBackup
 from .extractors import (
     calendar,
     calls,
+    chrome,
     contacts,
     deleted,
     files,
@@ -54,6 +56,7 @@ _CORE_EXTRACTORS = [
     messages,
     calls,
     safari,
+    chrome,
     whatsapp,
     social,
     calendar,
@@ -67,6 +70,7 @@ _ANDROID_EXTRACTORS = [
     a_contacts,
     a_messages,
     a_calls,
+    a_chrome,
     a_whatsapp,
     a_social,
     a_calendar,

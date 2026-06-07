@@ -113,3 +113,11 @@ def test_calendar_notes_files(backup):
     assert notes.extract(backup)["count"] == 1
     assert "كلمة سر" in notes.extract(backup)["records"][0]["content"]
     assert files.extract(backup)["count"] > 0
+
+
+def test_chrome_history(backup):
+    from phonexe.extractors import chrome
+    out = chrome.extract(backup)
+    assert out["count"] == 1
+    assert out["records"][0]["url"] == "https://example.com"
+    assert out["records"][0]["timestamp"].startswith("2023-")

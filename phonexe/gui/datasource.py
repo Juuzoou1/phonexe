@@ -378,6 +378,9 @@ def timeline(report: dict) -> list[dict]:
     for r in _records(report, "safari_history"):
         add(r.get("timestamp"), "Web", "Safari",
             f"{r.get('title','')} {r.get('url','')}")
+    for r in _records(report, "chrome_history"):
+        add(r.get("timestamp"), "Web", "Chrome",
+            f"{r.get('title','')} {r.get('url','')}")
     for r in _records(report, "photos"):
         exif = r.get("exif") or {}
         if exif.get("DateTimeOriginal"):
@@ -599,7 +602,17 @@ def section_table(report: dict, section: str
         cols, rows = _to_table(_location_records(report),
                                ["latitude", "longitude", "timestamp", "source"])
     elif section == "sec_browser":
-        cols, rows = _to_table(_records(report, "safari_history"))
+        merged = []
+        for r in _records(report, "safari_history"):
+            merged.append({"browser": "Safari", "url": r.get("url"),
+                           "title": r.get("title"),
+                           "timestamp": r.get("timestamp")})
+        for r in _records(report, "chrome_history"):
+            merged.append({"browser": "Chrome", "url": r.get("url"),
+                           "title": r.get("title"),
+                           "timestamp": r.get("timestamp")})
+        cols, rows = _to_table(merged,
+                               ["browser", "title", "url", "timestamp"])
     elif section == "sec_accounts":
         emails = []
         for c in _records(report, "contacts"):

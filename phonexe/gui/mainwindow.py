@@ -10,6 +10,7 @@ from PyQt6.QtCore import QSize, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QApplication,
+    QComboBox,
     QDialog,
     QFileDialog,
     QFrame,
@@ -104,6 +105,8 @@ class MainWindow(QWidget):
         self._current_cols: list[str] = []
         self._search_results: list[dict] = []
         self.audit = AuditLog()
+        self.devices: list[dict] = []   # multi-device case: {label, report}
+        self._switching = False
         self._worker: AnalyzeWorker | None = None
 
         self.setWindowTitle("phonexe")
@@ -230,6 +233,15 @@ class MainWindow(QWidget):
         self.connected_lbl = QLabel()
         self.connected_lbl.setObjectName("sectionHeader")
         lay.addWidget(self.connected_lbl)
+
+        # multi-device selector (visible once >1 device is loaded)
+        self.device_combo = QComboBox()
+        self.device_combo.setStyleSheet(
+            f"QComboBox{{background:{theme.CARD};color:{theme.TEXT};"
+            f"border:1px solid {theme.BORDER};border-radius:8px;padding:6px;}}")
+        self.device_combo.currentIndexChanged.connect(self._switch_device)
+        self.device_combo.hide()
+        lay.addWidget(self.device_combo)
 
         # device card
         self.device_card = QFrame()
@@ -632,13 +644,13 @@ class MainWindow(QWidget):
         if not path:
             return
         try:
-            self.report = json.loads(Path(path).read_text(encoding="utf-8"))
+            report = json.loads(Path(path).read_text(encoding="utf-8"))
         except Exception as e:
             QMessageBox.critical(self, "phonexe", str(e))
             return
         self.add_event(tr("completed"))
         self.donut.set_percent(100)
-        self.refresh_views()
+        self._add_device(report)
 
     def load_path(self, path: str):
         self.add_event(tr("loading"))
@@ -655,11 +667,31 @@ class MainWindow(QWidget):
         self.donut.set_percent(cur)
 
     def _on_done(self, report: dict):
-        self.report = report
         self.donut.set_percent(100)
         self.add_event(tr("completed"))
+        self._add_device(report)
+
+    def _add_device(self, report: dict):
+        from .datasource import device_summary
+        label = device_summary(report).get("name") or f"Device {len(self.devices)+1}"
+        self.devices.append({"label": label, "report": report})
         src = (report.get("meta", {}) or {}).get("source_path", "")
-        self.audit.record("evidence_loaded", src)
+        self.audit.record("evidence_loaded", f"{label} — {src}")
+        # refresh the selector
+        self._switching = True
+        self.device_combo.clear()
+        self.device_combo.addItems([d["label"] for d in self.devices])
+        self.device_combo.setVisible(len(self.devices) > 1)
+        self.device_combo.setCurrentIndex(len(self.devices) - 1)
+        self._switching = False
+        self.report = report
+        self.refresh_views()
+
+    def _switch_device(self, index: int):
+        if self._switching or index < 0 or index >= len(self.devices):
+            return
+        self.report = self.devices[index]["report"]
+        self.audit.record("device_switched", self.devices[index]["label"])
         self.refresh_views()
 
     def _on_failed(self, msg: str):
@@ -1067,6 +1099,12 @@ class MainWindow(QWidget):
 
     def end_examination(self):
         self.report = None
+        self.devices = []
+        self._switching = True
+        self.device_combo.clear()
+        self.device_combo.hide()
+        self._switching = False
+        self.audit.record("examination_ended")
         self.donut.set_percent(0)
         self.select_section("sec_overview")
         self.refresh_views()

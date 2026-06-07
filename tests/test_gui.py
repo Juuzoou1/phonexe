@@ -202,3 +202,24 @@ def test_audit_log():
     assert rows[0]["action"] == "examination_started"
     assert any(r["action"] == "test_action" for r in rows)
     assert all("timestamp" in r for r in rows)
+
+
+def test_multi_device(tmp_path):
+    pytest.importorskip("PyQt6.QtWidgets")
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    try:
+        from PyQt6.QtWidgets import QApplication
+        from phonexe.gui.mainwindow import MainWindow
+    except Exception:
+        pytest.skip("Qt unavailable")
+    app = QApplication.instance() or QApplication([])
+    build_ios(tmp_path / "b1")
+    build_ios(tmp_path / "b2")
+    win = MainWindow()
+    win._add_device(analyze(tmp_path / "b1"))
+    win._add_device(analyze(tmp_path / "b2"))
+    assert len(win.devices) == 2
+    assert win.device_combo.count() == 2
+    win._switch_device(0)
+    assert win.report is win.devices[0]["report"]
+    app.processEvents()

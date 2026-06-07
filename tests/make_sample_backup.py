@@ -183,6 +183,19 @@ def _make_instagram_builder(image_path: str):
     return _build_instagram
 
 
+def _build_chrome(con):
+    con.execute(
+        "CREATE TABLE urls(id INTEGER PRIMARY KEY, url, title, visit_count, "
+        "last_visit_time)"
+    )
+    # Chrome time = (unix + 11644473600) * 1e6
+    chrome_ts = int((1685620800 + 11644473600) * 1_000_000)
+    con.execute(
+        "INSERT INTO urls VALUES(1,'https://example.com','Example',5,?)",
+        (chrome_ts,),
+    )
+
+
 def _build_calendar(con):
     con.execute(
         "CREATE TABLE CalendarItem(ROWID INTEGER PRIMARY KEY, summary, "
@@ -285,6 +298,9 @@ def build(root: str | Path) -> Path:
          _sqlite_bytes(_build_calendar)),
         ("HomeDomain", "Library/Notes/notes.sqlite",
          _sqlite_bytes(_build_notes)),
+        ("AppDomain-com.google.chrome.ios",
+         "Library/Application Support/Google/Chrome/Default/History",
+         _sqlite_bytes(_build_chrome)),
         ("AppDomainGroup-group.net.whatsapp.WhatsApp.shared",
          "ChatStorage.sqlite",
          _sqlite_bytes(_make_whatsapp_builder(str(media.resolve())))),

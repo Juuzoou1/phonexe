@@ -43,6 +43,24 @@ def cocoa_to_iso(value: Optional[float]) -> Optional[str]:
         return None
 
 
+def chrome_to_iso(value: Optional[float]) -> Optional[str]:
+    """Convert a Chrome/WebKit timestamp (microseconds since 1601) to ISO-8601."""
+    if value is None:
+        return None
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return None
+    if v == 0:
+        return None
+    # microseconds since 1601-01-01 -> Unix seconds
+    unix = v / 1_000_000 - 11644473600
+    try:
+        return datetime.fromtimestamp(unix, tz=timezone.utc).isoformat()
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
 def unix_to_iso(value: Optional[float], millis: bool = False) -> Optional[str]:
     """Convert a Unix timestamp (seconds, or milliseconds) to ISO-8601 UTC."""
     if value is None:
