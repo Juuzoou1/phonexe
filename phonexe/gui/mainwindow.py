@@ -91,6 +91,7 @@ class MainWindow(QWidget):
         self.report: dict | None = None
         self.current_section = "sec_overview"
         self._chat_return = "sec_apps"
+        self._chat_size_mode = "full"
         self._worker: AnalyzeWorker | None = None
 
         self.setWindowTitle("phonexe")
@@ -371,6 +372,16 @@ class MainWindow(QWidget):
         self.chat_back_btn.clicked.connect(self._close_app_chat)
         back_bar.addWidget(self.chat_back_btn)
         back_bar.addStretch(1)
+        self.size_phone_btn = QPushButton("📱  جوال")
+        self.size_full_btn = QPushButton("🖥  كمبيوتر")
+        for b, mode in ((self.size_phone_btn, "phone"),
+                        (self.size_full_btn, "full")):
+            b.setObjectName("ghost")
+            b.setCheckable(True)
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.clicked.connect(lambda _=False, m=mode: self._set_chat_size(m))
+            back_bar.addWidget(b)
+        self.size_full_btn.setChecked(True)
         chat_v.addLayout(back_bar)
         self.chat_container = QVBoxLayout()
         self.chat_container.setContentsMargins(0, 0, 0, 0)
@@ -737,12 +748,22 @@ class MainWindow(QWidget):
             view.location_clicked.connect(self.open_map_dialog)
             view.image_clicked.connect(self.open_image_dialog)
 
-        # swap into the inline chat page
+        # swap into the inline chat page, wrapped so it can be sized like a
+        # phone (centered, narrow) or fill the computer screen.
         while self.chat_container.count():
             item = self.chat_container.takeAt(0)
             if item.widget():
                 item.widget().setParent(None)
-        self.chat_container.addWidget(view)
+        self._chat_view = view
+        holder = QWidget()
+        hb = QHBoxLayout(holder)
+        hb.setContentsMargins(0, 0, 0, 0)
+        hb.addStretch(0)        # index 0: left spacer
+        hb.addWidget(view)      # index 1: the app view
+        hb.addStretch(0)        # index 2: right spacer
+        self._chat_hb = hb
+        self.chat_container.addWidget(holder)
+        self._set_chat_size(getattr(self, "_chat_size_mode", "full"))
         # remember where to return (apps grid by default)
         if self.current_section != "sec_apps":
             self._chat_return = self.current_section
@@ -751,6 +772,28 @@ class MainWindow(QWidget):
         self.section_title_lbl.setVisible(True)
         self.section_title_lbl.setText(theme_for(app_key).name)
         self.content_stack.setCurrentIndex(4)
+
+    def _set_chat_size(self, mode: str):
+        self._chat_size_mode = mode
+        self.size_phone_btn.setChecked(mode == "phone")
+        self.size_full_btn.setChecked(mode == "full")
+        view = getattr(self, "_chat_view", None)
+        hb = getattr(self, "_chat_hb", None)
+        if view is None or hb is None:
+            return
+        if mode == "phone":
+            # narrow, phone-sized, centered between two spacers
+            view.setFixedWidth(440)
+            hb.setStretch(0, 1)
+            hb.setStretch(1, 0)
+            hb.setStretch(2, 1)
+        else:
+            # fill the whole computer screen
+            view.setMinimumWidth(0)
+            view.setMaximumWidth(16777215)
+            hb.setStretch(0, 0)
+            hb.setStretch(1, 1)
+            hb.setStretch(2, 0)
 
     def _close_app_chat(self):
         self.select_section(getattr(self, "_chat_return", "sec_apps")

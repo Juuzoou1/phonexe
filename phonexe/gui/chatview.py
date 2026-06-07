@@ -31,6 +31,56 @@ from . import theme
 from .widgets import avatar_pixmap
 
 
+class ChatBackground(QWidget):
+    """Thread background: solid chat color + an optional faint doodle pattern.
+
+    The pattern is an original set of simple communication motifs (not any
+    app's proprietary wallpaper artwork), evoking the familiar chat-wallpaper
+    feel while remaining our own design.
+    """
+
+    def __init__(self, color: str, doodle: bool = False):
+        super().__init__()
+        self._color = color
+        self._doodle = doodle
+
+    def paintEvent(self, _e):  # noqa: N802
+        from PyQt6.QtGui import QPainter, QPen
+
+        p = QPainter(self)
+        p.fillRect(self.rect(), QColor(self._color))
+        if not self._doodle:
+            p.end()
+            return
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pen = QPen(QColor(255, 255, 255, 12))
+        pen.setWidth(2)
+        p.setPen(pen)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        step = 84
+        for gy, y in enumerate(range(10, self.height(), step)):
+            for gx, x in enumerate(range(10, self.width(), step)):
+                motif = (gx + gy) % 5
+                if motif == 0:                      # chat bubble
+                    p.drawRoundedRect(x, y, 26, 18, 6, 6)
+                    p.drawLine(x + 6, y + 18, x + 2, y + 24)
+                elif motif == 1:                    # heart
+                    p.drawArc(x, y, 12, 12, 0, 180 * 16)
+                    p.drawArc(x + 10, y, 12, 12, 0, 180 * 16)
+                    p.drawLine(x, y + 6, x + 11, y + 20)
+                    p.drawLine(x + 22, y + 6, x + 11, y + 20)
+                elif motif == 2:                    # phone
+                    p.drawRoundedRect(x + 4, y, 14, 24, 3, 3)
+                elif motif == 3:                    # star
+                    p.drawLine(x + 10, y, x + 10, y + 20)
+                    p.drawLine(x, y + 10, x + 20, y + 10)
+                    p.drawLine(x + 3, y + 3, x + 17, y + 17)
+                    p.drawLine(x + 17, y + 3, x + 3, y + 17)
+                else:                               # circle
+                    p.drawEllipse(x, y, 18, 18)
+        p.end()
+
+
 class ClickableLabel(QLabel):
     """A QLabel that emits its associated path string when clicked."""
 
@@ -272,8 +322,8 @@ class ChatView(QWidget):
         self.thread_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.thread_scroll.setStyleSheet(
             f"background:{self.theme.chat_bg};border:none;")
-        self.thread_inner = QWidget()
-        self.thread_inner.setStyleSheet(f"background:{self.theme.chat_bg};")
+        self.thread_inner = ChatBackground(self.theme.chat_bg,
+                                           doodle=(app_key == "whatsapp"))
         self.thread_layout = QVBoxLayout(self.thread_inner)
         self.thread_layout.setContentsMargins(16, 12, 16, 12)
         self.thread_layout.setSpacing(8)
