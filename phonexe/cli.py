@@ -243,6 +243,16 @@ def _cmd_android_adb(args) -> int:
     return 0
 
 
+def _cmd_gui(args) -> int:
+    try:
+        from .gui.app import run as run_gui
+    except ImportError:
+        print("[!] PyQt6 is required for the GUI. Install it with: "
+              "pip install PyQt6", file=sys.stderr)
+        return 2
+    return run_gui([sys.argv[0]])
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="phonexe",
@@ -295,6 +305,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_adb.add_argument("--examiner", help="examiner name (recorded in report)")
     p_adb.add_argument("--case-id", help="case identifier (recorded in report)")
     p_adb.set_defaults(func=_cmd_android_adb)
+
+    # ---- desktop GUI ----
+    p_gui = sub.add_parser("gui", help="launch the desktop GUI (PyQt6)")
+    p_gui.set_defaults(func=_cmd_gui)
     return parser
 
 

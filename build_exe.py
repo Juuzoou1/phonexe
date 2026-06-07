@@ -40,9 +40,12 @@ def main() -> int:
         # collect optional Pillow plugins (HEIC/JPEG) when present
         "--collect-submodules",
         "PIL",
-        # ensure lazily-imported phonexe modules (e.g. android.adb) are bundled
+        # ensure lazily-imported phonexe modules (e.g. android.adb, gui) bundle
         "--collect-submodules",
         "phonexe",
+        # bundle the PyQt6 desktop GUI and its Qt plugins
+        "--collect-all",
+        "PyQt6",
         "run.py",
     ]
     print("Running:", " ".join(cmd))

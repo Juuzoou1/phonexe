@@ -1,4 +1,9 @@
 # Core analysis uses only the Python standard library (sqlite3, plistlib).
+#
 # Pillow is optional but recommended: it enables EXIF / GPS extraction
 # from photos. Without it, photos are still inventoried and hashed.
 Pillow>=10.0.0
+#
+# PyQt6 is required only for the desktop GUI (`phonexe gui`). The CLI works
+# without it.
+PyQt6>=6.6.0

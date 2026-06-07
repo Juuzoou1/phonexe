@@ -62,10 +62,25 @@ Every evidence file can also be hashed (MD5/SHA-1/SHA-256) for
 
 ---
 
+## Desktop GUI
+
+A dark, bilingual (Arabic RTL / English) dashboard drives the same backend:
+
+```bash
+pip install PyQt6
+python -m phonexe gui
+```
+
+From the GUI you can open an iOS backup, an Android extraction, or a saved
+report; browse each section (messages & chats, calls, contacts, media,
+geolocation, browsing history, accounts) in searchable tables; watch live
+extraction progress; and export JSON + HTML reports. The built `phonexe.exe`
+launches this GUI when run with no arguments.
+
 ## Install & run (from source)
 
 ```bash
-pip install -r requirements.txt        # Pillow (optional, for EXIF)
+pip install -r requirements.txt        # Pillow (EXIF) + PyQt6 (GUI)
 ```
 
 ### iOS — analyze a backup
