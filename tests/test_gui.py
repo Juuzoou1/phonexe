@@ -223,3 +223,11 @@ def test_multi_device(tmp_path):
     win._switch_device(0)
     assert win.report is win.devices[0]["report"]
     app.processEvents()
+
+
+def test_media_kind():
+    from phonexe.gui.mediaview import media_kind
+    assert media_kind("/a/b.mp4") == "video"
+    assert media_kind("/a/b.m4a") == "audio"
+    assert media_kind("/a/b.jpg") == "image"
+    assert media_kind("/a/b.heic") == "image"

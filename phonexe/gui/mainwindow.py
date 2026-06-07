@@ -1006,26 +1006,10 @@ class MainWindow(QWidget):
         self._chat_return = "sec_apps"
 
     def open_image_dialog(self, path: str):
-        from PyQt6.QtGui import QPixmap
-
-        pix = QPixmap(path)
-        if pix.isNull():
-            return
-        dlg = QDialog(self)
-        dlg.setWindowTitle(Path(path).name)
-        dlg.resize(min(900, pix.width() + 40), min(720, pix.height() + 40))
-        lay = QVBoxLayout(dlg)
-        lbl = QLabel()
-        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl.setPixmap(pix.scaled(
-            860, 680, Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation))
-        lay.addWidget(lbl)
-        path_lbl = QLabel(path)
-        path_lbl.setObjectName("noteLabel")
-        path_lbl.setWordWrap(True)
-        lay.addWidget(path_lbl)
-        dlg.exec()
+        # routes images, video and audio to the right preview
+        from .mediaview import open_media
+        self.audit.record("media_previewed", Path(path).name)
+        open_media(self, path)
 
     def open_map_dialog(self, lat: float, lon: float, label: str):
         dlg = QDialog(self)
