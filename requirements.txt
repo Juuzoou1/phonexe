@@ -8,6 +8,11 @@ Pillow>=10.0.0
 # without it.
 PyQt6>=6.6.0
 #
+# PyQt-Fluent-Widgets gives the GUI its Fluent Design components (tables,
+# search fields, buttons, info bars). Optional — the UI falls back to plain
+# Qt widgets if it is absent.
+PyQt6-Fluent-Widgets>=1.5.0
+#
 # pymobiledevice3 is the bundled, pure-Python backend for `phonexe
 # acquire-ios` (pull a backup directly from a connected, authorized iPhone).
 # It is optional; libimobiledevice CLI tools can be used instead. On Windows

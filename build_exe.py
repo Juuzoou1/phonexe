@@ -59,6 +59,14 @@ def main() -> int:
         print("note: pymobiledevice3 not installed — acquire-ios will rely on "
               "bundled/system libimobiledevice instead.")
 
+    # bundle the Fluent widget library (and its data) when installed
+    try:
+        import qfluentwidgets  # noqa: F401
+        cmd += ["--collect-all", "qfluentwidgets"]
+    except ImportError:
+        print("note: PyQt6-Fluent-Widgets not installed — UI falls back to "
+              "plain Qt widgets.")
+
     cmd.append("run.py")
     print("Running:", " ".join(cmd))
     return subprocess.call(cmd)

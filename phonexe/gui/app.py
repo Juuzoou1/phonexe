@@ -15,6 +15,13 @@ def run(argv: list[str] | None = None) -> int:
     app.setApplicationName("phonexe")
     from .fonts import load_fonts
     load_fonts()
+    # Fluent Design theming (used by the qfluentwidgets components)
+    try:
+        from qfluentwidgets import Theme, setTheme, setThemeColor
+        setTheme(Theme.DARK)
+        setThemeColor(theme.ACCENT)
+    except Exception:
+        pass
     app.setStyleSheet(theme.stylesheet())
     window = MainWindow()
     window.show()

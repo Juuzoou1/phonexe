@@ -43,6 +43,15 @@ from .datasource import (
     section_table,
     stories,
 )
+from .fluent import (
+    ComboBox,
+    LineEdit,
+    PrimaryPushButton,
+    PushButton,
+    SearchLineEdit,
+    TableWidget,
+    notify,
+)
 from .i18n import Lang, tr
 from .mapview import MapMarker, OfflineMap
 from .widgets import Donut, PhoneOutline, StatCard, apply_glow, hline
@@ -198,7 +207,7 @@ class MainWindow(QWidget):
         lay.addStretch(1)
 
         # global search across all sections
-        self.global_search_box = QLineEdit()
+        self.global_search_box = SearchLineEdit()
         self.global_search_box.setFixedWidth(240)
         self.global_search_box.returnPressed.connect(self._run_global_search)
         lay.addWidget(self.global_search_box)
@@ -235,7 +244,7 @@ class MainWindow(QWidget):
         lay.addWidget(self.connected_lbl)
 
         # multi-device selector (visible once >1 device is loaded)
-        self.device_combo = QComboBox()
+        self.device_combo = ComboBox()
         self.device_combo.setStyleSheet(
             f"QComboBox{{background:{theme.CARD};color:{theme.TEXT};"
             f"border:1px solid {theme.BORDER};border-radius:8px;padding:6px;}}")
@@ -275,19 +284,19 @@ class MainWindow(QWidget):
         lay.addWidget(self.device_card)
 
         # device info button
-        self.device_info_btn = QPushButton()
+        self.device_info_btn = PushButton()
         self.device_info_btn.setObjectName("ghost")
         self.device_info_btn.clicked.connect(self._show_device_info)
         lay.addWidget(self.device_info_btn)
 
         # open buttons
-        self.open_ios_btn = QPushButton()
+        self.open_ios_btn = PrimaryPushButton()
         self.open_ios_btn.setObjectName("primary")
         self.open_ios_btn.clicked.connect(lambda: self.open_dir("ios"))
-        self.open_android_btn = QPushButton()
+        self.open_android_btn = PushButton()
         self.open_android_btn.setObjectName("ghost")
         self.open_android_btn.clicked.connect(lambda: self.open_dir("android"))
-        self.open_report_btn = QPushButton()
+        self.open_report_btn = PushButton()
         self.open_report_btn.setObjectName("ghost")
         self.open_report_btn.clicked.connect(self.open_report_file)
         lay.addWidget(self.open_ios_btn)
@@ -360,7 +369,7 @@ class MainWindow(QWidget):
         chead = QHBoxLayout()
         self.section_title_lbl = QLabel()
         self.section_title_lbl.setObjectName("panelTitle")
-        self.search_box = QLineEdit()
+        self.search_box = SearchLineEdit()
         self.search_box.setFixedWidth(240)
         self.search_box.textChanged.connect(self._apply_filter)
         chead.addWidget(self.section_title_lbl)
@@ -376,7 +385,10 @@ class MainWindow(QWidget):
         # content stack: table / offline map / apps grid
         self.content_stack = QStackedWidget()
 
-        self.table = QTableWidget()
+        self.table = TableWidget()
+        if hasattr(self.table, "setBorderRadius"):
+            self.table.setBorderRadius(8)
+            self.table.setBorderVisible(True)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(
             QTableWidget.SelectionBehavior.SelectRows
@@ -589,8 +601,7 @@ class MainWindow(QWidget):
         return lay
 
     def _big_btn(self, text: str, slot, primary=True) -> QPushButton:
-        b = QPushButton(text)
-        b.setObjectName("primary" if primary else "ghost")
+        b = (PrimaryPushButton(text) if primary else PushButton(text))
         b.setMinimumHeight(40)
         b.setCursor(Qt.CursorShape.PointingHandCursor)
         b.clicked.connect(slot)
@@ -895,8 +906,7 @@ class MainWindow(QWidget):
         self.bookmarks.append({"section": tr(self.current_section),
                                "data": data})
         self.audit.record("bookmark_added", data[:80])
-        QMessageBox.information(self, "phonexe",
-                               tr("sec_bookmarks") + " ✓")
+        notify(self, tr("sec_bookmarks"), data[:60], success=True)
 
     def _build_overview(self, report: dict):
         from .dashboard import build_dashboard
