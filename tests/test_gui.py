@@ -14,6 +14,7 @@ from phonexe.gui.datasource import (
     location_markers,
     overview_stats,
     section_table,
+    stories,
 )
 from tests.make_sample_android import build as build_android
 from tests.make_sample_backup import build as build_ios
@@ -38,8 +39,8 @@ def test_detect_platform(tmp_path):
 def test_overview_stats(ios_report):
     stats = dict(overview_stats(ios_report))
     assert stats["stat_contacts"] == 1
-    # messages = SMS/iMessage (2) + WhatsApp (4) + Instagram social (2)
-    assert stats["stat_messages"] == 8
+    # messages = SMS/iMessage (2) + WhatsApp (4) + Instagram social (3)
+    assert stats["stat_messages"] == 9
     assert stats["stat_apps"] >= 1
 
 
@@ -52,8 +53,8 @@ def test_device_summary(ios_report):
 def test_section_table_messages(ios_report):
     cols, rows, _ = section_table(ios_report, "sec_messages")
     assert "text" in cols and "source" in cols
-    # merged stream: 2 SMS/iMessage + 4 WhatsApp + 2 Instagram = 8
-    assert len(rows) == 8
+    # merged stream: 2 SMS/iMessage + 4 WhatsApp + 3 Instagram = 9
+    assert len(rows) == 9
 
 
 def test_section_table_contacts(ios_report):
@@ -84,6 +85,29 @@ def test_location_markers(ios_report):
     # WhatsApp (Riyadh) + Instagram (Jeddah) shared locations
     assert len(markers) >= 2
     assert all("lat" in m and "lon" in m for m in markers)
+
+
+def test_deleted_recovery(ios_report):
+    deleted = ios_report["artifacts"]["deleted"]
+    assert deleted["count"] >= 2
+    texts = " ".join(r["text"] for r in deleted["records"])
+    assert "secret meeting" in texts
+    cols, rows, note = section_table(ios_report, "sec_deleted")
+    assert "text" in cols and len(rows) >= 2 and note
+
+
+def test_timeline_sorted(ios_report):
+    cols, rows, _ = section_table(ios_report, "sec_timeline")
+    assert {"timestamp", "type", "source", "detail"} <= set(cols)
+    times = [r[cols.index("timestamp")] for r in rows if r[cols.index("timestamp")]]
+    assert times == sorted(times)
+    types = {r[cols.index("type")] for r in rows}
+    assert "Message" in types and "Call" in types
+
+
+def test_stories(ios_report):
+    items = stories(ios_report, "instagram")
+    assert items and all("image" in s for s in items)
 
 
 def test_offline_map_asset_loads():

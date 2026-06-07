@@ -13,16 +13,19 @@ from pathlib import Path
 from . import __version__
 from .android import calls as a_calls
 from .android import contacts as a_contacts
+from .android import deleted as a_deleted
 from .android import messages as a_messages
 from .android import social as a_social
 from .android import whatsapp as a_whatsapp
 from .android.extraction import AndroidExtraction
 from .apps import social, whatsapp
 from .backup import IOSBackup
-from .extractors import calls, contacts, messages, photos, safari
+from .extractors import calls, contacts, deleted, messages, photos, safari
 
-_IOS_EXTRACTORS = [contacts, messages, calls, safari, whatsapp, social, photos]
-_ANDROID_EXTRACTORS = [a_contacts, a_messages, a_calls, a_whatsapp, a_social]
+_IOS_EXTRACTORS = [contacts, messages, calls, safari, whatsapp, social, photos,
+                   deleted]
+_ANDROID_EXTRACTORS = [a_contacts, a_messages, a_calls, a_whatsapp, a_social,
+                       a_deleted]
 
 
 def detect_platform(path: str | Path) -> str | None:

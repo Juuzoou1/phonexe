@@ -207,10 +207,15 @@ def _msg_from_record(rec: dict) -> dict:
         from_me = bool(fm) if fm is not None else False
     lat = _pick(rec, "latitude", "lat", "gps_latitude")
     lon = _pick(rec, "longitude", "lon", "gps_longitude")
+    ts = _pick(rec, "timestamp", "date", "time")
+    if _is_num(ts):
+        from ..timeutil import unix_to_iso
+        v = float(ts)
+        ts = unix_to_iso(v, millis=v > 1e12) or unix_to_iso(v) or str(ts)
     return {
         "from_me": from_me,
         "text": _pick(rec, "text", "body", "content", "data", "caption"),
-        "timestamp": _pick(rec, "timestamp", "date", "time"),
+        "timestamp": ts,
         "sender": _pick(rec, "sender", "user_id", "from", "partner"),
         "image": _pick(rec, "image", "media", "media_path"),
         "lat": float(lat) if _is_num(lat) else None,
@@ -293,6 +298,70 @@ def location_markers(report: dict) -> list[dict]:
     return markers
 
 
+def _ts_key(value) -> str:
+    """Best-effort sort key: ISO strings sort directly; epochs are converted."""
+    if value is None:
+        return ""
+    if _is_num(value):
+        from ..timeutil import unix_to_iso
+        v = float(value)
+        iso = unix_to_iso(v, millis=v > 1e12) or unix_to_iso(v)
+        return iso or ""
+    return str(value)
+
+
+def timeline(report: dict) -> list[dict]:
+    """Aggregate every dated event into one chronologically sorted stream."""
+    events: list[dict] = []
+
+    def add(ts, etype, source, detail):
+        events.append({
+            "timestamp": _ts_key(ts) or (str(ts) if ts else ""),
+            "type": etype, "source": source,
+            "detail": (detail or "")[:120],
+        })
+
+    for r in _records(report, "messages"):
+        add(r.get("timestamp"), "Message", r.get("service") or "SMS",
+            f"{r.get('counterpart','')}: {r.get('text','')}")
+    for r in _records(report, "whatsapp"):
+        add(r.get("timestamp"), "Message", "WhatsApp",
+            f"{r.get('partner','')}: {r.get('text','')}")
+    for r in _records(report, "calls"):
+        add(r.get("timestamp"), "Call", r.get("provider") or "Phone",
+            f"{r.get('direction','')} {r.get('number','')}")
+    for r in _records(report, "safari_history"):
+        add(r.get("timestamp"), "Web", "Safari",
+            f"{r.get('title','')} {r.get('url','')}")
+    for r in _records(report, "photos"):
+        exif = r.get("exif") or {}
+        if exif.get("DateTimeOriginal"):
+            add(exif.get("DateTimeOriginal"), "Photo", "Camera",
+                r.get("relative_path"))
+    apps = _art(report, "social_apps").get("apps", {}) or {}
+    for app in apps.values():
+        for db in app.get("databases", []):
+            for t in db.get("tables", []):
+                for rec in t.get("records", []):
+                    m = _msg_from_record(rec)
+                    if m["timestamp"]:
+                        add(m["timestamp"], "Message", app.get("name"),
+                            f"{m.get('sender') or ''}: {m.get('text') or ''}")
+    events.sort(key=lambda e: e["timestamp"])
+    return events
+
+
+def stories(report: dict, app_key: str) -> list[dict]:
+    """Image highlights ('stories') for an app: its in-chat media items."""
+    out = []
+    for conv in conversations(report, app_key):
+        for m in conv["messages"]:
+            if m.get("image"):
+                out.append({"title": m.get("sender") or conv["title"],
+                            "image": m["image"]})
+    return out
+
+
 def section_table(report: dict, section: str
                   ) -> tuple[list[str], list[list[str]], str]:
     """Return (columns, rows, note) for a sidebar section."""
@@ -324,8 +393,12 @@ def section_table(report: dict, section: str
         cols, rows = _to_table(emails, ["account", "type", "source"])
         note = tr("accounts_note")
     elif section == "sec_deleted":
-        cols, rows = [], []
+        cols, rows = _to_table(_records(report, "deleted"),
+                               ["source", "page", "text"])
         note = tr("deleted_note")
+    elif section == "sec_timeline":
+        cols, rows = _to_table(timeline(report),
+                               ["timestamp", "type", "source", "detail"])
     else:
         cols, rows = [], []
     return cols, rows, note

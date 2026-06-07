@@ -37,6 +37,8 @@ _STRINGS: dict[str, dict[str, str]] = {
     "sec_browser": {"ar": "سجل التصفح", "en": "Browsing History"},
     "sec_accounts": {"ar": "الحسابات", "en": "Accounts"},
     "sec_deleted": {"ar": "البيانات المحذوفة", "en": "Deleted Data"},
+    "sec_timeline": {"ar": "الخط الزمني", "en": "Timeline"},
+    "stories": {"ar": "الحالات", "en": "Stories"},
     # ---- stats ----
     "stats_title": {"ar": "نظرة عامة على البيانات المستخرجة", "en": "Extracted Data Overview"},
     "refresh": {"ar": "تحديث البيانات", "en": "Refresh"},

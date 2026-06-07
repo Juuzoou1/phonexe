@@ -59,6 +59,9 @@ def _build_addressbook(con):
 
 
 def _build_sms(con):
+    # Keep deleted bytes on disk (as on most real devices) so they remain
+    # carvable; SQLite is otherwise sometimes built with secure_delete on.
+    con.execute("PRAGMA secure_delete=OFF")
     con.execute("CREATE TABLE handle(ROWID INTEGER PRIMARY KEY, id)")
     con.execute(
         "CREATE TABLE message(ROWID INTEGER PRIMARY KEY, text, date, "
@@ -79,6 +82,23 @@ def _build_sms(con):
     )
     con.execute("INSERT INTO chat_message_join VALUES(1,1)")
     con.execute("INSERT INTO chat_message_join VALUES(1,2)")
+    # Insert two messages and then delete them so the carver can recover
+    # their contents from the resulting SQLite freeblocks.
+    con.execute(
+        "INSERT INTO message VALUES(3,"
+        "'DELETED secret meeting at the port tonight',?,1,'SMS',1)",
+        ((_T + 120) * 1_000_000_000,),
+    )
+    con.execute(
+        "INSERT INTO message VALUES(4,'DELETED please erase this chat',?,1,"
+        "'SMS',1)",
+        ((_T + 180) * 1_000_000_000,),
+    )
+    # Commit so the rows are written to disk pages, then delete them in a
+    # second transaction — this leaves the original bytes in freeblocks,
+    # exactly like a real deletion the carver can recover.
+    con.commit()
+    con.execute("DELETE FROM message WHERE ROWID IN (3,4)")
 
 
 def _build_calls(con):
@@ -126,21 +146,27 @@ def _make_whatsapp_builder(image_path: str):
     return _build_whatsapp
 
 
-def _build_instagram(con):
-    # Mimic a generic message-like table the social collector should detect,
-    # including an in-chat shared location.
-    con.execute(
-        "CREATE TABLE direct_messages(pk INTEGER PRIMARY KEY, text, "
-        "timestamp, sender, latitude, longitude)"
-    )
-    con.execute(
-        "INSERT INTO direct_messages VALUES"
-        "(1,'ig dm hello',1685620800,'sara',NULL,NULL)"
-    )
-    con.execute(
-        "INSERT INTO direct_messages VALUES"
-        "(2,'هنا الكافيه',1685620900,'sara',21.4225,39.8262)"
-    )
+def _make_instagram_builder(image_path: str):
+    def _build_instagram(con):
+        # Generic message-like table the social collector detects, including
+        # an in-chat shared location and an image (used for the Stories strip).
+        con.execute(
+            "CREATE TABLE direct_messages(pk INTEGER PRIMARY KEY, text, "
+            "timestamp, sender, latitude, longitude, image)"
+        )
+        con.execute(
+            "INSERT INTO direct_messages VALUES"
+            "(1,'ig dm hello',1685620800,'sara',NULL,NULL,NULL)"
+        )
+        con.execute(
+            "INSERT INTO direct_messages VALUES"
+            "(2,'هنا الكافيه',1685620900,'sara',21.4225,39.8262,NULL)"
+        )
+        con.execute(
+            "INSERT INTO direct_messages VALUES"
+            "(3,'شوف ستوري',1685621000,'noor',NULL,NULL,?)", (image_path,)
+        )
+    return _build_instagram
 
 
 def _write_sample_image(path: Path) -> None:
@@ -164,9 +190,11 @@ def build(root: str | Path) -> Path:
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
 
-    # Create a real media file so the chat viewer can display it inline.
+    # Create real media files so the chat viewer can display them inline.
     media = root / "media" / "wa_photo.png"
     _write_sample_image(media)
+    ig_media = root / "media" / "ig_story.png"
+    _write_sample_image(ig_media)
 
     files = [
         ("HomeDomain", "Library/AddressBook/AddressBook.sqlitedb",
@@ -178,7 +206,7 @@ def build(root: str | Path) -> Path:
          "ChatStorage.sqlite",
          _sqlite_bytes(_make_whatsapp_builder(str(media.resolve())))),
         ("AppDomain-com.burbn.instagram", "Documents/direct.db",
-         _sqlite_bytes(_build_instagram)),
+         _sqlite_bytes(_make_instagram_builder(str(ig_media.resolve())))),
     ]
 
     # Build Manifest.db.

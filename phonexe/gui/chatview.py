@@ -29,6 +29,22 @@ from PyQt6.QtWidgets import (
 from . import theme
 
 
+class ClickableLabel(QLabel):
+    """A QLabel that emits its associated path string when clicked."""
+
+    clicked = pyqtSignal(str)
+
+    def __init__(self, path: str = ""):
+        super().__init__()
+        self._path = path
+        if path:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mousePressEvent(self, _e):  # noqa: N802
+        if self._path:
+            self.clicked.emit(self._path)
+
+
 @dataclass
 class AppTheme:
     name: str
@@ -88,6 +104,7 @@ class Conversation:
 
 class _Bubble(QFrame):
     location_clicked = pyqtSignal(float, float, str)
+    image_clicked = pyqtSignal(str)
 
     def __init__(self, msg: ChatMessage, th: AppTheme):
         super().__init__()
@@ -121,16 +138,17 @@ class _Bubble(QFrame):
             )
             lay.addWidget(btn)
 
-        # image
+        # image (click to preview full size)
         if msg.image:
-            img_lbl = QLabel()
             p = Path(msg.image)
+            img_lbl = ClickableLabel(str(p) if p.exists() else "")
             if p.exists():
                 pix = QPixmap(str(p))
                 if not pix.isNull():
                     img_lbl.setPixmap(
                         pix.scaledToWidth(220, Qt.TransformationMode.SmoothTransformation)
                     )
+                    img_lbl.clicked.connect(self.image_clicked)
                 else:
                     img_lbl.setText("🖼  image")
             else:
@@ -146,7 +164,7 @@ class _Bubble(QFrame):
             lay.addWidget(t)
 
         if msg.timestamp:
-            ts = QLabel(msg.timestamp.replace("T", " ")[:19])
+            ts = QLabel(str(msg.timestamp).replace("T", " ")[:19])
             ts.setStyleSheet("color: rgba(255,255,255,0.45); font-size: 9px;")
             ts.setAlignment(Qt.AlignmentFlag.AlignRight)
             lay.addWidget(ts)
@@ -158,8 +176,10 @@ class ChatView(QWidget):
     """Two-pane app-styled chat browser."""
 
     location_clicked = pyqtSignal(float, float, str)
+    image_clicked = pyqtSignal(str)
 
-    def __init__(self, app_key: str, conversations: list[Conversation]):
+    def __init__(self, app_key: str, conversations: list[Conversation],
+                 stories: list[dict] | None = None):
         super().__init__()
         self.theme = theme_for(app_key)
         self.conversations = conversations
@@ -179,6 +199,10 @@ class ChatView(QWidget):
         hl.addWidget(title)
         hl.addStretch(1)
         root.addWidget(header)
+
+        # stories strip (Instagram / Snapchat style)
+        if stories:
+            root.addWidget(self._build_stories(stories))
 
         body = QHBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
@@ -218,6 +242,59 @@ class ChatView(QWidget):
         if conversations:
             self.list.setCurrentRow(0)
 
+    def _build_stories(self, stories: list[dict]) -> QWidget:
+        from PyQt6.QtGui import QBrush, QPainter, QPainterPath
+
+        strip = QFrame()
+        strip.setStyleSheet(f"background: {theme.PANEL_ALT};")
+        strip.setFixedHeight(96)
+        lay = QHBoxLayout(strip)
+        lay.setContentsMargins(12, 8, 12, 8)
+        lay.setSpacing(12)
+        for st in stories[:12]:
+            col = QVBoxLayout()
+            col.setSpacing(2)
+            avatar = ClickableLabel(st.get("image", ""))
+            avatar.setFixedSize(58, 58)
+            pix = QPixmap(st["image"]) if Path(st.get("image", "")).exists() else QPixmap()
+            if not pix.isNull():
+                # circular crop with an accent ring
+                size = 58
+                circ = QPixmap(size, size)
+                circ.fill(Qt.GlobalColor.transparent)
+                painter = QPainter(circ)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                path = QPainterPath()
+                path.addEllipse(2, 2, size - 4, size - 4)
+                painter.setClipPath(path)
+                painter.drawPixmap(
+                    2, 2, pix.scaled(size - 4, size - 4,
+                                     Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                                     Qt.TransformationMode.SmoothTransformation))
+                painter.setClipping(False)
+                from PyQt6.QtGui import QPen
+                from PyQt6.QtGui import QColor
+                painter.setPen(QPen(QColor(self.theme.header), 3))
+                painter.setBrush(QBrush(Qt.BrushStyle.NoBrush))
+                painter.drawEllipse(2, 2, size - 4, size - 4)
+                painter.end()
+                avatar.setPixmap(circ)
+                avatar.clicked.connect(self.image_clicked)
+            else:
+                avatar.setStyleSheet(
+                    f"border:3px solid {self.theme.header};border-radius:29px;"
+                    f"background:{theme.PANEL};")
+            name = QLabel(str(st.get("title", ""))[:10])
+            name.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            name.setStyleSheet(f"color:{theme.TEXT_DIM};font-size:10px;")
+            col.addWidget(avatar, 0, Qt.AlignmentFlag.AlignHCenter)
+            col.addWidget(name)
+            holder = QWidget()
+            holder.setLayout(col)
+            lay.addWidget(holder)
+        lay.addStretch(1)
+        return strip
+
     def _clear_thread(self):
         while self.thread_layout.count():
             item = self.thread_layout.takeAt(0)
@@ -233,6 +310,7 @@ class ChatView(QWidget):
         for msg in conv.messages:
             bubble = _Bubble(msg, self.theme)
             bubble.location_clicked.connect(self.location_clicked)
+            bubble.image_clicked.connect(self.image_clicked)
             row_lay = QHBoxLayout()
             row_lay.setContentsMargins(0, 0, 0, 0)
             if msg.from_me:

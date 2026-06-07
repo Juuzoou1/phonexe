@@ -72,10 +72,23 @@ python -m phonexe gui
 ```
 
 From the GUI you can open an iOS backup, an Android extraction, or a saved
-report; browse each section (messages & chats, calls, contacts, media,
-geolocation, browsing history, accounts) in searchable tables; watch live
-extraction progress; and export JSON + HTML reports. The built `phonexe.exe`
-launches this GUI when run with no arguments.
+report; browse each section in searchable tables; watch live extraction
+progress; and export JSON + HTML reports. The built `phonexe.exe` launches
+this GUI when run with no arguments.
+
+Highlights:
+
+- **App-faithful chat viewer** — clicking an app opens it styled like the real
+  thing (WhatsApp green, Telegram blue, iMessage, Instagram, …) with sent /
+  received bubbles, inline images (click for full-size preview), and tappable
+  location bubbles.
+- **Stories strip** — Instagram / Snapchat media shown as circular highlights.
+- **Offline world map** — geolocation points (photo EXIF GPS + in-chat shared
+  locations) plotted on a bundled vector map, no internet required.
+- **Timeline** — every dated event (messages, calls, web visits, photos)
+  merged into one chronological stream.
+- **Deleted-data recovery** — best-effort carving of deleted rows from SQLite
+  freeblocks and free pages.
 
 ## Install & run (from source)
 

@@ -38,6 +38,7 @@ from .datasource import (
     location_markers,
     overview_stats,
     section_table,
+    stories,
 )
 from .i18n import Lang, tr
 from .mapview import MapMarker, OfflineMap
@@ -53,6 +54,7 @@ _SECTIONS = [
     ("sec_calls", "☎"),
     ("sec_contacts", "☰"),
     ("sec_browser", "◐"),
+    ("sec_timeline", "⏱"),
     ("sec_accounts", "⚿"),
     ("sec_deleted", "✗"),
 ]
@@ -600,8 +602,11 @@ class MainWindow(QWidget):
         for c in conversations(self.report, app_key):
             msgs = [ChatMessage(**m) for m in c["messages"]]
             convos.append(Conversation(title=c["title"], messages=msgs))
-        view = ChatView(app_key, convos)
+        story_items = stories(self.report, app_key) \
+            if app_key in ("instagram", "snapchat") else None
+        view = ChatView(app_key, convos, story_items)
         view.location_clicked.connect(self.open_map_dialog)
+        view.image_clicked.connect(self.open_image_dialog)
 
         dlg = QDialog(self)
         dlg.setWindowTitle(theme_for(app_key).name)
@@ -609,6 +614,28 @@ class MainWindow(QWidget):
         lay = QVBoxLayout(dlg)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.addWidget(view)
+        dlg.exec()
+
+    def open_image_dialog(self, path: str):
+        from PyQt6.QtGui import QPixmap
+
+        pix = QPixmap(path)
+        if pix.isNull():
+            return
+        dlg = QDialog(self)
+        dlg.setWindowTitle(Path(path).name)
+        dlg.resize(min(900, pix.width() + 40), min(720, pix.height() + 40))
+        lay = QVBoxLayout(dlg)
+        lbl = QLabel()
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl.setPixmap(pix.scaled(
+            860, 680, Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation))
+        lay.addWidget(lbl)
+        path_lbl = QLabel(path)
+        path_lbl.setObjectName("noteLabel")
+        path_lbl.setWordWrap(True)
+        lay.addWidget(path_lbl)
         dlg.exec()
 
     def open_map_dialog(self, lat: float, lon: float, label: str):
