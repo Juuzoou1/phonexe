@@ -90,6 +90,7 @@ class MainWindow(QWidget):
         self.setObjectName("root")
         self.report: dict | None = None
         self.current_section = "sec_overview"
+        self._chat_return = "sec_apps"
         self._worker: AnalyzeWorker | None = None
 
         self.setWindowTitle("phonexe")
@@ -357,6 +358,26 @@ class MainWindow(QWidget):
         self.dash_layout = QVBoxLayout(self.dash_holder)
         self.dash_layout.setContentsMargins(0, 0, 0, 0)
         self.content_stack.addWidget(self.dash_holder)     # index 3
+
+        # inline app-clone page (opens "beside" the grid like the real app)
+        self.chat_holder = QWidget()
+        chat_v = QVBoxLayout(self.chat_holder)
+        chat_v.setContentsMargins(0, 0, 0, 0)
+        chat_v.setSpacing(8)
+        back_bar = QHBoxLayout()
+        self.chat_back_btn = QPushButton("‹  رجوع للتطبيقات")
+        self.chat_back_btn.setObjectName("ghost")
+        self.chat_back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.chat_back_btn.clicked.connect(self._close_app_chat)
+        back_bar.addWidget(self.chat_back_btn)
+        back_bar.addStretch(1)
+        chat_v.addLayout(back_bar)
+        self.chat_container = QVBoxLayout()
+        self.chat_container.setContentsMargins(0, 0, 0, 0)
+        cc = QWidget()
+        cc.setLayout(self.chat_container)
+        chat_v.addWidget(cc, 1)
+        self.content_stack.addWidget(self.chat_holder)     # index 4
 
         cp.addWidget(self.content_stack, 1)
         lay.addWidget(content, 1)
@@ -696,6 +717,7 @@ class MainWindow(QWidget):
         self.apps_grid.setColumnStretch(4, 1)
 
     def open_app_chat(self, app_key: str):
+        """Open the app's clone view inline, beside the grid (like the app)."""
         if not self.report:
             return
         convos = []
@@ -708,13 +730,25 @@ class MainWindow(QWidget):
         view.location_clicked.connect(self.open_map_dialog)
         view.image_clicked.connect(self.open_image_dialog)
 
-        dlg = QDialog(self)
-        dlg.setWindowTitle(theme_for(app_key).name)
-        dlg.resize(820, 620)
-        lay = QVBoxLayout(dlg)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(view)
-        dlg.exec()
+        # swap into the inline chat page
+        while self.chat_container.count():
+            item = self.chat_container.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+        self.chat_container.addWidget(view)
+        # remember where to return (apps grid by default)
+        if self.current_section != "sec_apps":
+            self._chat_return = self.current_section
+        self.note_lbl.setVisible(False)
+        self.search_box.setVisible(False)
+        self.section_title_lbl.setVisible(True)
+        self.section_title_lbl.setText(theme_for(app_key).name)
+        self.content_stack.setCurrentIndex(4)
+
+    def _close_app_chat(self):
+        self.select_section(getattr(self, "_chat_return", "sec_apps")
+                            or "sec_apps")
+        self._chat_return = "sec_apps"
 
     def open_image_dialog(self, path: str):
         from PyQt6.QtGui import QPixmap
