@@ -12,12 +12,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPixmap
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPushButton,
@@ -27,6 +28,7 @@ from PyQt6.QtWidgets import (
 )
 
 from . import theme
+from .widgets import avatar_pixmap
 
 
 class ClickableLabel(QLabel):
@@ -57,24 +59,25 @@ class AppTheme:
     glyph: str = "▣"
 
 
+# Palettes mirror each app's real dark-mode UI (researched values).
 APP_THEMES: dict[str, AppTheme] = {
-    "whatsapp": AppTheme("WhatsApp", "#075E54", "#005C4B", "#e9edef",
+    "whatsapp": AppTheme("WhatsApp", "#202c33", "#005c4b", "#e9edef",
                          "#202c33", "#e9edef", "#0b141a", "✆"),
-    "messages": AppTheme("Messages", "#1f6feb", "#0b81ff", "#ffffff",
-                         "#26282b", "#e6ebf5", "#0c0f14", "✉"),
-    "telegram": AppTheme("Telegram", "#517da2", "#2b5278", "#ffffff",
+    "messages": AppTheme("Messages", "#1c1c1e", "#0b84ff", "#ffffff",
+                         "#26282b", "#e9e9eb", "#000000", "✉"),
+    "telegram": AppTheme("Telegram", "#17212b", "#2b5278", "#ffffff",
                          "#182533", "#e6ebf5", "#0e1621", "✈"),
-    "instagram": AppTheme("Instagram", "#c13584", "#3797f0", "#ffffff",
+    "instagram": AppTheme("Instagram", "#000000", "#3797f0", "#ffffff",
                           "#262626", "#fafafa", "#000000", "◉"),
-    "discord": AppTheme("Discord", "#5865F2", "#5865F2", "#ffffff",
+    "discord": AppTheme("Discord", "#1e1f22", "#5865f2", "#ffffff",
                         "#2b2d31", "#dbdee1", "#313338", "✦"),
-    "snapchat": AppTheme("Snapchat", "#000000", "#0fadff", "#ffffff",
-                         "#1b1b1b", "#fffc00", "#101010", "☂"),
-    "signal": AppTheme("Signal", "#3A76F0", "#2c6bed", "#ffffff",
+    "snapchat": AppTheme("Snapchat", "#fffc00", "#0fadff", "#ffffff",
+                         "#f0f0f0", "#111111", "#ffffff", "☂"),
+    "signal": AppTheme("Signal", "#1b1b1b", "#2c6bed", "#ffffff",
                        "#2a2a2a", "#e6ebf5", "#121212", "▲"),
-    "messenger": AppTheme("Messenger", "#0084FF", "#0084ff", "#ffffff",
+    "messenger": AppTheme("Messenger", "#000000", "#0084ff", "#ffffff",
                           "#303030", "#e6ebf5", "#0b0b0b", "◈"),
-    "tiktok": AppTheme("TikTok", "#010101", "#fe2c55", "#ffffff",
+    "tiktok": AppTheme("TikTok", "#121212", "#fe2c55", "#ffffff",
                        "#1f1f1f", "#e6ebf5", "#101010", "♪"),
 }
 
@@ -213,26 +216,62 @@ class ChatView(QWidget):
         body.setContentsMargins(0, 0, 0, 0)
         body.setSpacing(0)
 
-        # conversation list
-        self.list = QListWidget()
-        self.list.setFixedWidth(230)
-        self.list.setStyleSheet(
-            f"QListWidget{{background:{theme.PANEL_ALT};border:none;}}"
-            f"QListWidget::item{{padding:12px 14px;border-bottom:1px solid {theme.BORDER};}}"
-            f"QListWidget::item:selected{{background:{theme.PANEL};color:{theme.ACCENT};}}"
-        )
-        for conv in conversations:
-            QListWidgetItem(conv.title or "(unknown)", self.list)
-        self.list.currentRowChanged.connect(self._show_conversation)
-        body.addWidget(self.list)
+        # ---- left pane: search + conversation list ----
+        left = QVBoxLayout()
+        left.setContentsMargins(0, 0, 0, 0)
+        left.setSpacing(0)
+        search = QLineEdit()
+        search.setPlaceholderText("🔍  بحث")
+        search.setStyleSheet(
+            f"QLineEdit{{background:{self.theme.chat_bg};color:{theme.TEXT};"
+            f"border:none;border-bottom:1px solid {theme.BORDER};"
+            f"padding:9px 12px;}}")
+        search.textChanged.connect(self._filter_list)
+        left.addWidget(search)
 
-        # message thread
+        self.list = QListWidget()
+        self.list.setStyleSheet(
+            f"QListWidget{{background:{self.theme.header};border:none;}}"
+            f"QListWidget::item{{padding:9px 10px;"
+            f"border-bottom:1px solid rgba(255,255,255,0.06);color:#e9edef;}}"
+            f"QListWidget::item:selected{{background:{self.theme.recv_bubble};}}"
+        )
+        self.list.setIconSize(QSize(38, 38))
+        for conv in conversations:
+            it = QListWidgetItem(QIcon(avatar_pixmap(conv.title or "?", 38)),
+                                 "  " + (conv.title or "(unknown)"))
+            self.list.addItem(it)
+        self.list.currentRowChanged.connect(self._show_conversation)
+        left.addWidget(self.list, 1)
+        left_w = QWidget()
+        left_w.setFixedWidth(260)
+        left_w.setStyleSheet(f"background:{self.theme.header};")
+        left_w.setLayout(left)
+        body.addWidget(left_w)
+
+        # ---- right pane: conversation header + message thread ----
+        right = QVBoxLayout()
+        right.setContentsMargins(0, 0, 0, 0)
+        right.setSpacing(0)
+        self.conv_header = QFrame()
+        self.conv_header.setFixedHeight(54)
+        self.conv_header.setStyleSheet(f"background:{self.theme.header};")
+        chl = QHBoxLayout(self.conv_header)
+        chl.setContentsMargins(14, 0, 14, 0)
+        chl.setSpacing(10)
+        self.conv_avatar = QLabel()
+        self.conv_name = QLabel("")
+        self.conv_name.setStyleSheet("color:white;font-size:14px;font-weight:600;")
+        chl.addWidget(self.conv_avatar)
+        chl.addWidget(self.conv_name)
+        chl.addStretch(1)
+        right.addWidget(self.conv_header)
+
         self.thread_scroll = QScrollArea()
         self.thread_scroll.setWidgetResizable(True)
         self.thread_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.thread_scroll.setStyleSheet(
-            f"background:{self.theme.chat_bg};border:none;"
-        )
+            f"background:{self.theme.chat_bg};border:none;")
         self.thread_inner = QWidget()
         self.thread_inner.setStyleSheet(f"background:{self.theme.chat_bg};")
         self.thread_layout = QVBoxLayout(self.thread_inner)
@@ -240,12 +279,21 @@ class ChatView(QWidget):
         self.thread_layout.setSpacing(8)
         self.thread_layout.addStretch(1)
         self.thread_scroll.setWidget(self.thread_inner)
-        body.addWidget(self.thread_scroll, 1)
+        right.addWidget(self.thread_scroll, 1)
+        right_w = QWidget()
+        right_w.setLayout(right)
+        body.addWidget(right_w, 1)
 
         root.addLayout(body, 1)
 
         if conversations:
             self.list.setCurrentRow(0)
+
+    def _filter_list(self, text: str):
+        text = text.strip().lower()
+        for i in range(self.list.count()):
+            it = self.list.item(i)
+            it.setHidden(bool(text) and text not in it.text().lower())
 
     def _build_stories(self, stories: list[dict]) -> QWidget:
         from PyQt6.QtGui import QBrush, QPainter, QPainterPath
@@ -310,8 +358,12 @@ class ChatView(QWidget):
         self._clear_thread()
         if row < 0 or row >= len(self.conversations):
             self.thread_layout.addStretch(1)
+            self.conv_name.setText("")
+            self.conv_avatar.clear()
             return
         conv = self.conversations[row]
+        self.conv_name.setText(conv.title or "")
+        self.conv_avatar.setPixmap(avatar_pixmap(conv.title or "?", 34))
         for msg in conv.messages:
             bubble = _Bubble(msg, self.theme)
             bubble.location_clicked.connect(self.location_clicked)
