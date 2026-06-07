@@ -9,6 +9,7 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication,
+    QDialog,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -28,13 +29,18 @@ from PyQt6.QtWidgets import (
 from .. import __version__, analyze
 from ..reporting import report as reporting
 from . import theme
+from .chatview import ChatMessage, ChatView, Conversation, theme_for
 from .datasource import (
+    chat_apps,
+    conversations,
     device_fields,
     device_summary,
+    location_markers,
     overview_stats,
     section_table,
 )
 from .i18n import Lang, tr
+from .mapview import MapMarker, OfflineMap
 from .widgets import Donut, StatCard, hline
 
 # (section key, glyph) for the left sidebar.
@@ -280,6 +286,9 @@ class MainWindow(QWidget):
         self.note_lbl.setWordWrap(True)
         cp.addWidget(self.note_lbl)
 
+        # content stack: table / offline map / apps grid
+        self.content_stack = QStackedWidget()
+
         self.table = QTableWidget()
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(
@@ -287,7 +296,22 @@ class MainWindow(QWidget):
         )
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setStretchLastSection(True)
-        cp.addWidget(self.table, 1)
+        self.content_stack.addWidget(self.table)          # index 0
+
+        self.map_view = OfflineMap()
+        self.content_stack.addWidget(self.map_view)        # index 1
+
+        self.apps_scroll = QScrollArea()
+        self.apps_scroll.setWidgetResizable(True)
+        self.apps_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.apps_inner = QWidget()
+        self.apps_grid = QGridLayout(self.apps_inner)
+        self.apps_grid.setContentsMargins(4, 4, 4, 4)
+        self.apps_grid.setSpacing(12)
+        self.apps_scroll.setWidget(self.apps_inner)
+        self.content_stack.addWidget(self.apps_scroll)     # index 2
+
+        cp.addWidget(self.content_stack, 1)
         lay.addWidget(content, 1)
         return wrap
 
@@ -507,18 +531,95 @@ class MainWindow(QWidget):
 
     def _populate_table(self):
         report = self.report or {"artifacts": {}}
-        if self.current_section == "sec_overview":
-            cols, rows, note = section_table(report, "sec_messages")
-        else:
-            cols, rows, note = section_table(report, self.current_section)
+        section = self.current_section
+
+        # apps grid
+        if section == "sec_apps":
+            self.note_lbl.setVisible(False)
+            self.search_box.setVisible(False)
+            self._build_apps_grid(report)
+            self.content_stack.setCurrentIndex(2)
+            return
+
+        # offline map
+        if section == "sec_location":
+            self.note_lbl.setText(tr("scope_note"))
+            self.note_lbl.setVisible(True)
+            self.search_box.setVisible(False)
+            markers = [
+                MapMarker(m["lat"], m["lon"], m.get("label", ""))
+                for m in location_markers(report)
+            ]
+            self.map_view.set_markers(markers)
+            self.content_stack.setCurrentIndex(1)
+            return
+
+        # default: table
+        self.search_box.setVisible(True)
+        table_section = "sec_messages" if section == "sec_overview" else section
+        cols, rows, note = section_table(report, table_section)
         self.note_lbl.setText(note)
         self.note_lbl.setVisible(bool(note))
-
         self._all_rows = rows
         self.table.clear()
         self.table.setColumnCount(len(cols))
         self.table.setHorizontalHeaderLabels(cols)
         self._fill_rows(rows)
+        self.content_stack.setCurrentIndex(0)
+
+    def _build_apps_grid(self, report: dict):
+        while self.apps_grid.count():
+            item = self.apps_grid.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+        apps = chat_apps(report)
+        if not apps:
+            lbl = QLabel(tr("no_data"))
+            lbl.setObjectName("noteLabel")
+            self.apps_grid.addWidget(lbl, 0, 0)
+            return
+        for i, app in enumerate(apps):
+            th = theme_for(app["key"])
+            n_msgs = sum(len(c["messages"]) for c in conversations(report, app["key"]))
+            card = QPushButton(f"{th.glyph}\n\n{app['name']}\n{n_msgs} {tr('records')}")
+            card.setCursor(Qt.CursorShape.PointingHandCursor)
+            card.setMinimumSize(150, 120)
+            card.setStyleSheet(
+                f"QPushButton{{background:{theme.PANEL_ALT};color:{theme.TEXT};"
+                f"border:1px solid {theme.BORDER};border-radius:14px;"
+                f"font-size:13px;font-weight:600;}}"
+                f"QPushButton:hover{{border:2px solid {th.header};}}"
+            )
+            card.clicked.connect(lambda _=False, k=app["key"]: self.open_app_chat(k))
+            self.apps_grid.addWidget(card, i // 4, i % 4)
+
+    def open_app_chat(self, app_key: str):
+        if not self.report:
+            return
+        convos = []
+        for c in conversations(self.report, app_key):
+            msgs = [ChatMessage(**m) for m in c["messages"]]
+            convos.append(Conversation(title=c["title"], messages=msgs))
+        view = ChatView(app_key, convos)
+        view.location_clicked.connect(self.open_map_dialog)
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle(theme_for(app_key).name)
+        dlg.resize(820, 620)
+        lay = QVBoxLayout(dlg)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.addWidget(view)
+        dlg.exec()
+
+    def open_map_dialog(self, lat: float, lon: float, label: str):
+        dlg = QDialog(self)
+        dlg.setWindowTitle(label or "Location")
+        dlg.resize(720, 520)
+        lay = QVBoxLayout(dlg)
+        m = OfflineMap()
+        m.set_markers([MapMarker(lat, lon, label)])
+        lay.addWidget(m)
+        dlg.exec()
 
     def _fill_rows(self, rows: list[list[str]]):
         self.table.setRowCount(len(rows))

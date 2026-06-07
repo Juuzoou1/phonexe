@@ -189,6 +189,110 @@ def _photo_records(report: dict) -> list[dict]:
     return rows
 
 
+def _pick(rec: dict, *names, default=None):
+    for n in names:
+        if n in rec and rec[n] not in (None, ""):
+            return rec[n]
+    return default
+
+
+def _msg_from_record(rec: dict) -> dict:
+    """Normalize an arbitrary app message row into a chat message dict."""
+    direction = _pick(rec, "direction")
+    from_me = False
+    if direction is not None:
+        from_me = str(direction).lower() == "sent"
+    else:
+        fm = _pick(rec, "from_me", "is_from_me", "key_from_me")
+        from_me = bool(fm) if fm is not None else False
+    lat = _pick(rec, "latitude", "lat", "gps_latitude")
+    lon = _pick(rec, "longitude", "lon", "gps_longitude")
+    return {
+        "from_me": from_me,
+        "text": _pick(rec, "text", "body", "content", "data", "caption"),
+        "timestamp": _pick(rec, "timestamp", "date", "time"),
+        "sender": _pick(rec, "sender", "user_id", "from", "partner"),
+        "image": _pick(rec, "image", "media", "media_path"),
+        "lat": float(lat) if _is_num(lat) else None,
+        "lon": float(lon) if _is_num(lon) else None,
+    }
+
+
+def _is_num(v) -> bool:
+    try:
+        float(v)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def _group(records, key_fn, default_title):
+    convos: dict[str, list] = {}
+    for rec in records:
+        title = key_fn(rec) or default_title
+        convos.setdefault(str(title), []).append(_msg_from_record(rec))
+    return [{"title": t, "messages": m} for t, m in convos.items()]
+
+
+def chat_apps(report: dict) -> list[dict]:
+    """List apps that have viewable conversations, in display order."""
+    apps = []
+    if _count(report, "messages") > 0:
+        apps.append({"key": "messages", "name": "Messages"})
+    if _count(report, "whatsapp") > 0:
+        apps.append({"key": "whatsapp", "name": "WhatsApp"})
+    social = _art(report, "social_apps").get("apps", {}) or {}
+    for key, app in social.items():
+        apps.append({"key": key, "name": app.get("name", key.title())})
+    return apps
+
+
+def conversations(report: dict, app_key: str) -> list[dict]:
+    """Build per-conversation message threads for *app_key*."""
+    if app_key == "messages":
+        return _group(
+            _records(report, "messages"),
+            lambda r: r.get("chat") or r.get("counterpart"),
+            "Unknown",
+        )
+    if app_key == "whatsapp":
+        return _group(
+            _records(report, "whatsapp"),
+            lambda r: r.get("partner") or r.get("from") or r.get("to"),
+            "WhatsApp",
+        )
+    # social app: flatten its tables and group by sender if any
+    app = (_art(report, "social_apps").get("apps", {}) or {}).get(app_key, {})
+    recs = [
+        rec
+        for db in app.get("databases", [])
+        for t in db.get("tables", [])
+        for rec in t.get("records", [])
+    ]
+    return _group(recs, lambda r: r.get("sender") or r.get("user_id"),
+                  app.get("name", app_key.title()))
+
+
+def location_markers(report: dict) -> list[dict]:
+    """All geolocation points (photos GPS + in-chat locations)."""
+    markers = []
+    for r in _location_records(report):
+        markers.append({
+            "lat": r["latitude"], "lon": r["longitude"],
+            "label": (r.get("source") or "")[-24:],
+        })
+    # in-chat locations (whatsapp + social)
+    for app in chat_apps(report):
+        for conv in conversations(report, app["key"]):
+            for m in conv["messages"]:
+                if m.get("lat") is not None and m.get("lon") is not None:
+                    markers.append({
+                        "lat": m["lat"], "lon": m["lon"],
+                        "label": f"{app['name']}: {conv['title']}"[:28],
+                    })
+    return markers
+
+
 def section_table(report: dict, section: str
                   ) -> tuple[list[str], list[list[str]], str]:
     """Return (columns, rows, note) for a sidebar section."""

@@ -92,37 +92,81 @@ def _build_calls(con):
     )
 
 
-def _build_whatsapp(con):
-    con.execute(
-        "CREATE TABLE ZWACHATSESSION(Z_PK INTEGER PRIMARY KEY, ZCONTACTJID, "
-        "ZPARTNERNAME)"
-    )
-    con.execute(
-        "CREATE TABLE ZWAMESSAGE(Z_PK INTEGER PRIMARY KEY, ZTEXT, "
-        "ZMESSAGEDATE, ZISFROMME, ZFROMJID, ZTOJID, ZCHATSESSION)"
-    )
-    con.execute("INSERT INTO ZWACHATSESSION VALUES(1,'1@s.whatsapp.net','Sara')")
-    con.execute(
-        "INSERT INTO ZWAMESSAGE VALUES(1,'wa message',?,0,'1@s.whatsapp.net',"
-        "'me',1)",
-        (_T,),
-    )
+def _make_whatsapp_builder(image_path: str):
+    def _build_whatsapp(con):
+        con.execute(
+            "CREATE TABLE ZWACHATSESSION(Z_PK INTEGER PRIMARY KEY, ZCONTACTJID, "
+            "ZPARTNERNAME)"
+        )
+        con.execute(
+            "CREATE TABLE ZWAMEDIAITEM(Z_PK INTEGER PRIMARY KEY, ZMEDIALOCALPATH)"
+        )
+        con.execute(
+            "CREATE TABLE ZWAMESSAGE(Z_PK INTEGER PRIMARY KEY, ZTEXT, "
+            "ZMESSAGEDATE, ZISFROMME, ZFROMJID, ZTOJID, ZCHATSESSION, "
+            "ZLATITUDE, ZLONGITUDE, ZMEDIAITEM)"
+        )
+        con.execute(
+            "INSERT INTO ZWACHATSESSION VALUES(1,'1@s.whatsapp.net','Sara')"
+        )
+        con.execute("INSERT INTO ZWAMEDIAITEM VALUES(1,?)", (image_path,))
+        # text, location, image, reply
+        con.execute(
+            "INSERT INTO ZWAMESSAGE VALUES(1,'مرحبا، وين نتقابل؟',?,0,"
+            "'1@s.whatsapp.net','me',1,NULL,NULL,NULL)", (_T,))
+        con.execute(
+            "INSERT INTO ZWAMESSAGE VALUES(2,'موقعي الحين',?,0,"
+            "'1@s.whatsapp.net','me',1,24.7136,46.6753,NULL)", (_T + 60,))
+        con.execute(
+            "INSERT INTO ZWAMESSAGE VALUES(3,'شوف الصورة',?,1,'me',"
+            "'1@s.whatsapp.net',1,NULL,NULL,1)", (_T + 120,))
+        con.execute(
+            "INSERT INTO ZWAMESSAGE VALUES(4,'تمام، جاي',?,1,'me',"
+            "'1@s.whatsapp.net',1,NULL,NULL,NULL)", (_T + 180,))
+    return _build_whatsapp
 
 
 def _build_instagram(con):
-    # Mimic a generic message-like table the social collector should detect.
+    # Mimic a generic message-like table the social collector should detect,
+    # including an in-chat shared location.
     con.execute(
         "CREATE TABLE direct_messages(pk INTEGER PRIMARY KEY, text, "
-        "timestamp, sender)"
+        "timestamp, sender, latitude, longitude)"
     )
     con.execute(
-        "INSERT INTO direct_messages VALUES(1,'ig dm hello',1685620800,'sara')"
+        "INSERT INTO direct_messages VALUES"
+        "(1,'ig dm hello',1685620800,'sara',NULL,NULL)"
     )
+    con.execute(
+        "INSERT INTO direct_messages VALUES"
+        "(2,'هنا الكافيه',1685620900,'sara',21.4225,39.8262)"
+    )
+
+
+def _write_sample_image(path: Path) -> None:
+    """Write a tiny placeholder image used as a chat media attachment."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        from PIL import Image
+
+        Image.new("RGB", (240, 160), (34, 211, 238)).save(path)
+    except Exception:
+        # 1x1 PNG fallback if Pillow is unavailable
+        png = bytes.fromhex(
+            "89504e470d0a1a0a0000000d49484452000000010000000108020000"
+            "00907753de0000000c4944415408d763f8cfc0f01f00050001ff"
+            "a3d4e60000000049454e44ae426082"
+        )
+        path.write_bytes(png)
 
 
 def build(root: str | Path) -> Path:
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
+
+    # Create a real media file so the chat viewer can display it inline.
+    media = root / "media" / "wa_photo.png"
+    _write_sample_image(media)
 
     files = [
         ("HomeDomain", "Library/AddressBook/AddressBook.sqlitedb",
@@ -131,7 +175,8 @@ def build(root: str | Path) -> Path:
         ("HomeDomain", "Library/CallHistoryDB/CallHistory.storedata",
          _sqlite_bytes(_build_calls)),
         ("AppDomainGroup-group.net.whatsapp.WhatsApp.shared",
-         "ChatStorage.sqlite", _sqlite_bytes(_build_whatsapp)),
+         "ChatStorage.sqlite",
+         _sqlite_bytes(_make_whatsapp_builder(str(media.resolve())))),
         ("AppDomain-com.burbn.instagram", "Documents/direct.db",
          _sqlite_bytes(_build_instagram)),
     ]

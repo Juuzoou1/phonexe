@@ -51,8 +51,11 @@ def test_calls(backup):
 
 def test_whatsapp(backup):
     out = whatsapp.extract(backup)
-    assert out["count"] == 1
+    assert out["count"] == 4
     assert out["records"][0]["partner"] == "Sara"
+    # one message carries a shared location, another references media
+    assert any("latitude" in r for r in out["records"])
+    assert any("media" in r for r in out["records"])
 
 
 def test_social_detects_instagram(backup):

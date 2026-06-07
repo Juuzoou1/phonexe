@@ -46,6 +46,9 @@ def main() -> int:
         # bundle the PyQt6 desktop GUI and its Qt plugins
         "--collect-all",
         "PyQt6",
+        # bundle the offline world-map data used by the geolocation view
+        "--collect-data",
+        "phonexe",
         "run.py",
     ]
     print("Running:", " ".join(cmd))
