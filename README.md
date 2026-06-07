@@ -1,10 +1,10 @@
 # phonexe — iOS Backup Forensic Analyzer
 
-`phonexe` is a digital-forensics tool that analyzes **iOS device backups** and
-produces structured, court-friendly reports (JSON + HTML) of the local
-artifacts they contain: contacts, messages, calls, Safari history, photos
-(with EXIF/GPS), and chat apps such as WhatsApp, Instagram, Snapchat, Discord,
-Telegram and more.
+`phonexe` is a digital-forensics tool that analyzes **iOS and Android** device
+data and produces structured, court-friendly reports (JSON + HTML) of the
+local artifacts they contain: contacts, messages, calls, browser history,
+photos (with EXIF/GPS), and chat apps such as WhatsApp, Instagram, Snapchat,
+Discord, Telegram and more.
 
 It is designed to be packaged as a single Windows executable (`phonexe.exe`).
 
@@ -35,6 +35,8 @@ run against an encrypted backup.
 
 ## What it extracts
 
+### iOS (from a decrypted backup)
+
 | Module        | Source artifact                                  |
 |---------------|--------------------------------------------------|
 | contacts      | `AddressBook.sqlitedb`                            |
@@ -45,7 +47,17 @@ run against an encrypted backup.
 | whatsapp      | `ChatStorage.sqlite`                             |
 | social_apps   | Instagram, Snapchat, Discord, Telegram, Signal, Messenger, TikTok — auto-detected message-like tables |
 
-Every backup file can also be hashed (MD5/SHA-1/SHA-256) for
+### Android (from a /data extraction or live ADB)
+
+| Module        | Source artifact                                  |
+|---------------|--------------------------------------------------|
+| contacts      | `contacts2.db` (contacts provider)               |
+| messages      | `mmssms.db` (telephony provider)                 |
+| calls         | `calls` table (contacts provider)                |
+| whatsapp      | `msgstore.db`                                     |
+| social_apps   | Instagram, Snapchat, Discord, Telegram, Signal, Messenger, TikTok |
+
+Every evidence file can also be hashed (MD5/SHA-1/SHA-256) for
 **chain-of-custody** verification (`--hash`).
 
 ---
@@ -54,22 +66,44 @@ Every backup file can also be hashed (MD5/SHA-1/SHA-256) for
 
 ```bash
 pip install -r requirements.txt        # Pillow (optional, for EXIF)
+```
 
-# inspect device metadata
-python -m phonexe info  /path/to/Backup/<udid>
+### iOS — analyze a backup
 
-# full extraction + reports
+```bash
+python -m phonexe info    /path/to/Backup/<udid>     # device metadata
 python -m phonexe analyze /path/to/Backup/<udid> \
     -o report --hash \
     --examiner "Your Name" --case-id "CASE-2026-001"
 ```
 
-Reports are written to `report/report.json` and `report/report.html`.
-
-### Where are iOS backups?
-
+Backup locations:
 - **Windows:** `C:\Users\<user>\AppData\Roaming\Apple Computer\MobileSync\Backup\`
 - **macOS:** `~/Library/Application Support/MobileSync/Backup/`
+
+### Android — analyze a filesystem extraction
+
+Point it at a directory tree copied from the device's `/data` partition
+(obtained from a device you are authorized to examine):
+
+```bash
+python -m phonexe android-info /path/to/extraction
+python -m phonexe android      /path/to/extraction -o report --hash
+```
+
+### Android — live ADB logical acquisition
+
+For a connected device with USB debugging enabled and **authorized** (the
+on-device prompt accepted by the owner). Requires `adb` on PATH:
+
+```bash
+python -m phonexe android-adb -o report --examiner "Your Name"
+```
+
+This pulls contacts, SMS and call log via Android content providers. It does
+not root the device or bypass any lock.
+
+Reports are written to `report/report.json` and `report/report.html`.
 
 ---
 
@@ -94,8 +128,9 @@ phonexe.exe analyze "C:\path\to\Backup\<udid>" -o report --hash
 ## Development
 
 ```bash
-python tests/make_sample_backup.py sample/backup   # synthetic test backup
-python -m pytest                                   # run the test suite
+python tests/make_sample_backup.py  sample/backup   # synthetic iOS backup
+python tests/make_sample_android.py sample/android  # synthetic Android dump
+python -m pytest                                    # run the test suite
 ```
 
 The sample backup contains entirely fabricated data and is safe to use for

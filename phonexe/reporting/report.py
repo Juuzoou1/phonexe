@@ -119,8 +119,9 @@ def write_html(report: dict, out_path: str | Path) -> Path:
             for app in data["apps"].values():
                 blocks.append(f"<h3>{html.escape(app['name'])}</h3>")
                 for db in app["databases"]:
+                    location = db.get("relative_path") or db.get("path", "")
                     blocks.append(
-                        f"<p class='note'>{html.escape(db['relative_path'])}</p>"
+                        f"<p class='note'>{html.escape(str(location))}</p>"
                     )
                     for t in db.get("tables", []):
                         blocks.append(

@@ -17,7 +17,8 @@ import sqlite3
 from dataclasses import dataclass
 
 from ..backup import IOSBackup
-from ..sqlite_util import columns, open_ro, safe_query
+from ..dbscan import dump_table, message_tables
+from ..sqlite_util import open_ro
 
 ARTIFACT = "social_apps"
 
@@ -42,49 +43,11 @@ KNOWN_APPS: tuple[AppDef, ...] = (
     AppDef("tiktok", "TikTok", ("com.zhiliaoapp.musically", "com.ss.iphone")),
 )
 
-# Column-name hints used to recognise message-like tables.
-_TEXT_HINTS = ("text", "body", "message", "content", "caption", "comment")
-_TIME_HINTS = ("date", "time", "timestamp", "created", "sent", "ts")
 _DB_SUFFIXES = (".sqlite", ".db", ".sqlitedb", ".sql")
-
-# Cap rows per table so a chat-heavy device can't blow up memory / report size.
-_MAX_ROWS = 5000
 
 
 def _is_db(relative_path: str) -> bool:
     return relative_path.lower().endswith(_DB_SUFFIXES)
-
-
-def _message_tables(con: sqlite3.Connection) -> list[str]:
-    tables = [
-        r["name"]
-        for r in safe_query(
-            con,
-            "SELECT name FROM sqlite_master WHERE type='table'",
-        )
-    ]
-    hits = []
-    for t in tables:
-        cols = {c.lower() for c in columns(con, t)}
-        has_text = any(any(h in c for h in _TEXT_HINTS) for c in cols)
-        has_time = any(any(h in c for h in _TIME_HINTS) for c in cols)
-        if has_text and has_time:
-            hits.append(t)
-    return hits
-
-
-def _dump_table(con: sqlite3.Connection, table: str) -> list[dict]:
-    rows = safe_query(con, f'SELECT * FROM "{table}" LIMIT {_MAX_ROWS}')
-    out = []
-    for r in rows:
-        rec = {}
-        for k in r.keys():
-            v = r[k]
-            if isinstance(v, (bytes, bytearray)):
-                v = f"<blob {len(v)} bytes>"
-            rec[k] = v
-        out.append(rec)
-    return out
 
 
 def _match_app(domain: str) -> AppDef | None:
@@ -115,8 +78,8 @@ def extract(backup: IOSBackup) -> dict:
         }
         try:
             with open_ro(payload) as con:
-                for table in _message_tables(con):
-                    records = _dump_table(con, table)
+                for table in message_tables(con):
+                    records = dump_table(con, table)
                     if records:
                         db_entry["tables"].append(
                             {

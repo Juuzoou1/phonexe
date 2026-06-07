@@ -40,6 +40,9 @@ def main() -> int:
         # collect optional Pillow plugins (HEIC/JPEG) when present
         "--collect-submodules",
         "PIL",
+        # ensure lazily-imported phonexe modules (e.g. android.adb) are bundled
+        "--collect-submodules",
+        "phonexe",
         "run.py",
     ]
     print("Running:", " ".join(cmd))
