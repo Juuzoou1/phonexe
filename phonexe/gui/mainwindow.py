@@ -45,7 +45,7 @@ from .datasource import (
 )
 from .i18n import Lang, tr
 from .mapview import MapMarker, OfflineMap
-from .widgets import Donut, StatCard, apply_glow, hline
+from .widgets import Donut, PhoneOutline, StatCard, apply_glow, hline
 
 # (section key, Lucide icon name) for the left sidebar.
 _SECTIONS = [
@@ -243,26 +243,42 @@ class MainWindow(QWidget):
         self.device_combo.hide()
         lay.addWidget(self.device_combo)
 
-        # device card
+        # device card: phone outline mockup + details
         self.device_card = QFrame()
         self.device_card.setObjectName("deviceCard")
-        dc = QVBoxLayout(self.device_card)
+        dc = QHBoxLayout(self.device_card)
         dc.setContentsMargins(12, 12, 12, 12)
-        dc.setSpacing(2)
+        dc.setSpacing(12)
+        self.phone_outline = PhoneOutline()
+        dc.addWidget(self.phone_outline, 0, Qt.AlignmentFlag.AlignTop)
+
+        details = QVBoxLayout()
+        details.setSpacing(2)
         self.dev_name_lbl = QLabel()
         self.dev_name_lbl.setObjectName("deviceName")
         self.dev_os_lbl = QLabel()
         self.dev_os_lbl.setObjectName("deviceMeta")
+        self.dev_storage_lbl = QLabel()
+        self.dev_storage_lbl.setObjectName("deviceMeta")
         self.dev_id_lbl = QLabel()
         self.dev_id_lbl.setObjectName("deviceMeta")
         self.dev_id_lbl.setWordWrap(True)
         self.dev_status_lbl = QLabel()
         self.dev_status_lbl.setObjectName("statusOk")
-        dc.addWidget(self.dev_name_lbl)
-        dc.addWidget(self.dev_os_lbl)
-        dc.addWidget(self.dev_id_lbl)
-        dc.addWidget(self.dev_status_lbl)
+        details.addWidget(self.dev_name_lbl)
+        details.addWidget(self.dev_os_lbl)
+        details.addWidget(self.dev_storage_lbl)
+        details.addWidget(self.dev_id_lbl)
+        details.addWidget(self.dev_status_lbl)
+        details.addStretch(1)
+        dc.addLayout(details, 1)
         lay.addWidget(self.device_card)
+
+        # device info button
+        self.device_info_btn = QPushButton()
+        self.device_info_btn.setObjectName("ghost")
+        self.device_info_btn.clicked.connect(self._show_device_info)
+        lay.addWidget(self.device_info_btn)
 
         # open buttons
         self.open_ios_btn = QPushButton()
@@ -514,6 +530,7 @@ class MainWindow(QWidget):
         self.lang_btn.setText(tr("language"))
         self.connected_lbl.setText(tr("connected_device"))
         self.dev_status_lbl.setText("● " + tr("connected"))
+        self.device_info_btn.setText(tr("device_info"))
         self.open_ios_btn.setText(tr("open_ios"))
         self.open_android_btn.setText(tr("open_android"))
         self.open_report_btn.setText(tr("open_report"))
@@ -719,8 +736,18 @@ class MainWindow(QWidget):
         summ = device_summary(report)
         self.dev_name_lbl.setText(summ["name"] if self.report else tr("no_device"))
         self.dev_os_lbl.setText(summ["os"])
-        self.dev_id_lbl.setText(summ["ident"])
+        storage = ""
+        for key, val in device_fields(report):
+            if key in ("f_storage", "f_capacity"):
+                storage = val
+        self.dev_storage_lbl.setText(storage)
+        self.dev_storage_lbl.setVisible(bool(storage))
+        # shorten very long UDIDs for the compact card
+        ident = summ["ident"]
+        self.dev_id_lbl.setText(f"UDID: {ident}" if ident else "")
         self.dev_status_lbl.setVisible(bool(self.report))
+        self.phone_outline.setVisible(bool(self.report))
+        self.device_info_btn.setVisible(bool(self.report))
 
         # device info panel
         while self.devinfo_box.count():
@@ -1092,6 +1119,13 @@ class MainWindow(QWidget):
         self.donut.set_percent(0)
         self.select_section("sec_overview")
         self.refresh_views()
+
+    def _show_device_info(self):
+        if not self.report:
+            return
+        lines = [f"{tr(k)}: {v}" for k, v in device_fields(self.report)]
+        QMessageBox.information(self, tr("device_info"),
+                               "\n".join(lines) or tr("no_data"))
 
     def show_about(self):
         QMessageBox.information(

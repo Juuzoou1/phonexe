@@ -132,6 +132,50 @@ class Donut(QWidget):
         p.end()
 
 
+class PhoneOutline(QWidget):
+    """A drawn iPhone outline mockup (rounded body, dynamic island, glow)."""
+
+    def __init__(self, glow: str = None):
+        super().__init__()
+        self._glow = glow or theme.OK
+        self.setFixedSize(72, 142)
+
+    def paintEvent(self, _e):  # noqa: N802
+        from PyQt6.QtCore import QRectF
+        from PyQt6.QtGui import QPainterPath
+
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        body = QRectF(8, 6, w - 16, h - 12)
+        radius = 14
+
+        # soft green edge glow
+        for gw, alpha in ((7, 40), (3, 90)):
+            c = QColor(self._glow)
+            c.setAlpha(alpha)
+            pen = QPen(c, gw)
+            p.setPen(pen)
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(body, radius, radius)
+
+        # body + screen
+        p.setPen(QPen(QColor(self._glow), 1.5))
+        p.setBrush(QColor("#0a0f0d"))
+        p.drawRoundedRect(body, radius, radius)
+        screen = QRectF(body.x() + 3, body.y() + 3,
+                        body.width() - 6, body.height() - 6)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor("#05080a"))
+        p.drawRoundedRect(screen, radius - 3, radius - 3)
+
+        # dynamic island
+        island = QRectF(w / 2 - 11, body.y() + 8, 22, 7)
+        p.setBrush(QColor("#000000"))
+        p.drawRoundedRect(island, 3.5, 3.5)
+        p.end()
+
+
 class BarChart(QWidget):
     """Simple horizontal bar chart: list of (label, value)."""
 
