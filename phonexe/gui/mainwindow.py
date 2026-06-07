@@ -306,7 +306,10 @@ class MainWindow(QWidget):
         self.apps_scroll = QScrollArea()
         self.apps_scroll.setWidgetResizable(True)
         self.apps_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.apps_scroll.setStyleSheet("background: transparent; border: none;")
+        self.apps_scroll.viewport().setStyleSheet(f"background: {theme.PANEL};")
         self.apps_inner = QWidget()
+        self.apps_inner.setStyleSheet(f"background: {theme.PANEL};")
         self.apps_grid = QGridLayout(self.apps_inner)
         self.apps_grid.setContentsMargins(4, 4, 4, 4)
         self.apps_grid.setSpacing(12)
@@ -580,20 +583,43 @@ class MainWindow(QWidget):
             lbl.setObjectName("noteLabel")
             self.apps_grid.addWidget(lbl, 0, 0)
             return
+        from .appicons import BRAND, app_pixmap
         for i, app in enumerate(apps):
-            th = theme_for(app["key"])
             n_msgs = sum(len(c["messages"]) for c in conversations(report, app["key"]))
-            card = QPushButton(f"{th.glyph}\n\n{app['name']}\n{n_msgs} {tr('records')}")
-            card.setCursor(Qt.CursorShape.PointingHandCursor)
-            card.setMinimumSize(150, 120)
+            card = QFrame()
+            card.setObjectName("appCard")
+            card.setFixedHeight(150)
+            card.setMinimumWidth(150)
+            brand = BRAND.get(app["key"], theme.ACCENT)
             card.setStyleSheet(
-                f"QPushButton{{background:{theme.PANEL_ALT};color:{theme.TEXT};"
-                f"border:1px solid {theme.BORDER};border-radius:14px;"
-                f"font-size:13px;font-weight:600;}}"
-                f"QPushButton:hover{{border:2px solid {th.header};}}"
+                f"QFrame#appCard{{background:{theme.PANEL_ALT};"
+                f"border:1px solid {theme.BORDER};border-radius:16px;}}"
+                f"QFrame#appCard:hover{{border:2px solid {brand};}}"
             )
-            card.clicked.connect(lambda _=False, k=app["key"]: self.open_app_chat(k))
-            self.apps_grid.addWidget(card, i // 4, i % 4)
+            cl = QVBoxLayout(card)
+            cl.setContentsMargins(10, 14, 10, 12)
+            cl.setSpacing(6)
+            icon = QLabel()
+            icon.setPixmap(app_pixmap(app["key"], 56))
+            icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            name = QLabel(app["name"])
+            name.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            name.setStyleSheet("font-size:13px;font-weight:600;")
+            cnt = QLabel(f"{n_msgs:,} {tr('records')}")
+            cnt.setObjectName("noteLabel")
+            cnt.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            cl.addWidget(icon)
+            cl.addWidget(name)
+            cl.addWidget(cnt)
+            card.setCursor(Qt.CursorShape.PointingHandCursor)
+            card.mousePressEvent = (
+                lambda _e, k=app["key"]: self.open_app_chat(k)
+            )
+            self.apps_grid.addWidget(card, i // 4, i % 4,
+                                     Qt.AlignmentFlag.AlignTop)
+        rows = (len(apps) + 3) // 4
+        self.apps_grid.setRowStretch(rows, 1)
+        self.apps_grid.setColumnStretch(4, 1)
 
     def open_app_chat(self, app_key: str):
         if not self.report:

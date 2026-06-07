@@ -194,7 +194,12 @@ class ChatView(QWidget):
         header.setFixedHeight(46)
         hl = QHBoxLayout(header)
         hl.setContentsMargins(14, 0, 14, 0)
-        title = QLabel(f"{self.theme.glyph}   {self.theme.name}")
+        hl.setSpacing(10)
+        from .appicons import app_pixmap
+        icon = QLabel()
+        icon.setPixmap(app_pixmap(app_key, 30))
+        hl.addWidget(icon)
+        title = QLabel(self.theme.name)
         title.setStyleSheet("color: white; font-size: 15px; font-weight: 700;")
         hl.addWidget(title)
         hl.addStretch(1)
