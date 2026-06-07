@@ -7,3 +7,9 @@ Pillow>=10.0.0
 # PyQt6 is required only for the desktop GUI (`phonexe gui`). The CLI works
 # without it.
 PyQt6>=6.6.0
+#
+# pymobiledevice3 is the bundled, pure-Python backend for `phonexe
+# acquire-ios` (pull a backup directly from a connected, authorized iPhone).
+# It is optional; libimobiledevice CLI tools can be used instead. On Windows
+# the Apple Mobile Device USB driver (free "Apple Devices" app) is required.
+pymobiledevice3>=2.30.0

@@ -94,3 +94,14 @@ def test_cli_end_to_end(tmp_path):
     assert report["device"]["device_name"] == "Suspect iPhone"
     assert report["artifacts"]["messages"]["count"] == 2
     assert (out_dir / "report.html").exists()
+
+
+def test_ios_acquire_check():
+    from phonexe import ios_acquire
+    status = ios_acquire.check()
+    assert set(status) >= {"libimobiledevice", "pymobiledevice3", "ready",
+                           "backend"}
+    assert isinstance(status["ready"], bool)
+    # graceful when no device / backend present
+    assert ios_acquire.list_devices() == [] or isinstance(
+        ios_acquire.list_devices(), list)

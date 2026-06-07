@@ -252,6 +252,49 @@ def chat_apps(report: dict) -> list[dict]:
     return apps
 
 
+_IG_THREAD_KEYS = ("thread_id", "thread_key", "conversation_id",
+                   "conversation_pk", "chat_id", "thread_pk")
+_IG_NAME_KEYS = ("thread_title", "title", "participants", "username",
+                 "sender", "user_id", "user_name")
+
+
+def _instagram_conversations(records: list[dict]) -> list[dict]:
+    """Dedicated Instagram DM grouping.
+
+    Groups messages by their thread/conversation id when present (so a real
+    Instagram Direct database splits into the correct threads), names each
+    thread by its title/participants, and links any media column. Falls back
+    to grouping by sender when no thread id exists.
+    """
+    def thread_key(r: dict):
+        for k in _IG_THREAD_KEYS:
+            if r.get(k) not in (None, ""):
+                return str(r[k])
+        return None
+
+    def thread_name(r: dict):
+        for k in _IG_NAME_KEYS:
+            v = r.get(k)
+            if v not in (None, ""):
+                return str(v)
+        return "Instagram"
+
+    grouped: dict[str, dict] = {}
+    for r in records:
+        key = thread_key(r) or thread_name(r)
+        bucket = grouped.setdefault(
+            key, {"title": thread_name(r), "messages": []})
+        # prefer a human title over a numeric thread id
+        if bucket["title"] in (key, "Instagram"):
+            bucket["title"] = thread_name(r)
+        bucket["messages"].append(_msg_from_record(r))
+
+    convos = list(grouped.values())
+    for c in convos:
+        c["messages"].sort(key=lambda m: str(m.get("timestamp") or ""))
+    return convos
+
+
 def conversations(report: dict, app_key: str) -> list[dict]:
     """Build per-conversation message threads for *app_key*."""
     if app_key == "messages":
@@ -266,7 +309,7 @@ def conversations(report: dict, app_key: str) -> list[dict]:
             lambda r: r.get("partner") or r.get("from") or r.get("to"),
             "WhatsApp",
         )
-    # social app: flatten its tables and group by sender if any
+    # social app: flatten its tables
     app = (_art(report, "social_apps").get("apps", {}) or {}).get(app_key, {})
     recs = [
         rec
@@ -274,6 +317,8 @@ def conversations(report: dict, app_key: str) -> list[dict]:
         for t in db.get("tables", [])
         for rec in t.get("records", [])
     ]
+    if app_key == "instagram":
+        return _instagram_conversations(recs)
     return _group(recs, lambda r: r.get("sender") or r.get("user_id"),
                   app.get("name", app_key.title()))
 

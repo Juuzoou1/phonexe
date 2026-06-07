@@ -246,6 +246,53 @@ def _cmd_android_adb(args) -> int:
     return 0
 
 
+def _cmd_acquire_ios(args) -> int:
+    from . import ios_acquire
+
+    print(BANNER)
+    status = ios_acquire.check()
+    if args.check or not status["ready"]:
+        print("[i] iOS acquisition readiness:\n")
+        print(f"    libimobiledevice : {'yes' if status['libimobiledevice'] else 'no'}")
+        print(f"    pymobiledevice3  : {'yes' if status['pymobiledevice3'] else 'no'}")
+        print(f"    ready            : {'YES' if status['ready'] else 'NO'}")
+        if not status["ready"]:
+            print("\n[!] No acquisition backend available.")
+            print("    - Windows: install the free 'Apple Devices' app (Apple")
+            print("      Mobile Device Support USB driver), then bundle")
+            print("      libimobiledevice tools or install pymobiledevice3.")
+            return 0 if args.check else 2
+        if args.check:
+            return 0
+
+    devices = ios_acquire.list_devices()
+    if not devices:
+        print("[!] No device detected. Connect an UNLOCKED, trusted iPhone "
+              "(tap 'Trust This Computer'), ideally in airplane mode.",
+              file=sys.stderr)
+        return 2
+    udid = args.serial or devices[0]
+    info = ios_acquire.device_info(udid)
+    name = info.get("DeviceName", "iPhone")
+    print(f"[i] Device: {name} (iOS {info.get('ProductVersion', '?')}) "
+          f"UDID {udid}")
+
+    out_root = Path(args.output or "ios_acquisition")
+    print(f"[*] Acquiring backup into {out_root} (this can take a while) ...")
+    try:
+        backup_dir = ios_acquire.acquire(out_root, udid,
+                                         progress=lambda ln: print("   ", ln))
+    except ios_acquire.AcquireError as e:
+        print(f"[!] {e}", file=sys.stderr)
+        return 2
+
+    print(f"[+] Acquired. Analyzing {backup_dir} ...")
+    args.backup_dir = str(backup_dir)
+    args.no_photos = False
+    args.hash = True
+    return _cmd_analyze(args)
+
+
 def _cmd_gui(args) -> int:
     try:
         from .gui.app import run as run_gui
@@ -308,6 +355,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_adb.add_argument("--examiner", help="examiner name (recorded in report)")
     p_adb.add_argument("--case-id", help="case identifier (recorded in report)")
     p_adb.set_defaults(func=_cmd_android_adb)
+
+    # ---- iOS direct acquisition ----
+    p_acq = sub.add_parser(
+        "acquire-ios",
+        help="pull a backup from a connected, authorized iPhone and analyze it",
+    )
+    p_acq.add_argument("--check", action="store_true",
+                       help="only report acquisition readiness")
+    p_acq.add_argument("-s", "--serial", help="target device UDID")
+    p_acq.add_argument("-o", "--output", help="output directory")
+    p_acq.add_argument("--examiner", help="examiner name (recorded in report)")
+    p_acq.add_argument("--case-id", help="case identifier (recorded in report)")
+    p_acq.set_defaults(func=_cmd_acquire_ios)
 
     # ---- desktop GUI ----
     p_gui = sub.add_parser("gui", help="launch the desktop GUI (PyQt6)")

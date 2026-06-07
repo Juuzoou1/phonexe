@@ -113,6 +113,23 @@ def test_stories(ios_report):
     assert items and all("image" in s for s in items)
 
 
+def test_instagram_thread_grouping():
+    from phonexe.gui.datasource import _instagram_conversations
+    recs = [
+        {"thread_id": "A", "thread_title": "نورة", "text": "hi", "timestamp": 2},
+        {"thread_id": "A", "thread_title": "نورة", "text": "hello", "timestamp": 1},
+        {"thread_id": "B", "thread_title": "سارة", "text": "yo", "timestamp": 3,
+         "image": "/x.png"},
+    ]
+    convos = _instagram_conversations(recs)
+    assert len(convos) == 2  # two distinct threads
+    a = next(c for c in convos if c["title"] == "نورة")
+    # sorted by timestamp within the thread
+    assert [m["text"] for m in a["messages"]] == ["hello", "hi"]
+    b = next(c for c in convos if c["title"] == "سارة")
+    assert b["messages"][0]["image"] == "/x.png"
+
+
 def test_offline_map_asset_loads():
     pytest.importorskip("PyQt6.QtWidgets")
     import os

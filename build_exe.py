@@ -49,8 +49,17 @@ def main() -> int:
         # bundle the offline world-map data used by the geolocation view
         "--collect-data",
         "phonexe",
-        "run.py",
     ]
+
+    # bundle the pure-Python iOS acquisition backend only if it is installed
+    try:
+        import pymobiledevice3  # noqa: F401
+        cmd += ["--collect-submodules", "pymobiledevice3"]
+    except ImportError:
+        print("note: pymobiledevice3 not installed — acquire-ios will rely on "
+              "bundled/system libimobiledevice instead.")
+
+    cmd.append("run.py")
     print("Running:", " ".join(cmd))
     return subprocess.call(cmd)
 
