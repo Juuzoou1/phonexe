@@ -57,28 +57,37 @@ from .i18n import Lang, tr
 from .mapview import MapMarker, OfflineMap
 from .widgets import Donut, PhoneOutline, StatCard, apply_glow, hline
 
-# (section key, Lucide icon name) for the left sidebar.
-_SECTIONS = [
-    ("sec_overview", "layout-dashboard"),
-    ("sec_apps", "layout-grid"),
-    ("sec_installed", "layout-grid"),
-    ("sec_messages", "message-circle"),
-    ("sec_media", "image"),
-    ("sec_location", "map-pin"),
-    ("sec_calls", "phone"),
-    ("sec_contacts", "users"),
-    ("sec_browser", "globe"),
-    ("sec_calendar", "calendar"),
-    ("sec_notes", "file-text"),
-    ("sec_files", "file"),
-    ("sec_timeline", "clock"),
-    ("sec_links", "share-2"),
-    ("sec_identities", "contact-round"),
-    ("sec_accounts", "key-round"),
-    ("sec_deleted", "trash-2"),
-    ("sec_bookmarks", "bookmark"),
-    ("sec_audit", "history"),
+# Sidebar artifact tree: category header -> [(section key, Lucide icon)].
+_SECTION_GROUPS = [
+    ("cat_device", [
+        ("sec_overview", "layout-dashboard"),
+        ("sec_apps", "layout-grid"),
+        ("sec_installed", "layout-grid"),
+    ]),
+    ("cat_data", [
+        ("sec_messages", "message-circle"),
+        ("sec_media", "image"),
+        ("sec_location", "map-pin"),
+        ("sec_calls", "phone"),
+        ("sec_contacts", "users"),
+        ("sec_browser", "globe"),
+        ("sec_calendar", "calendar"),
+        ("sec_notes", "file-text"),
+        ("sec_files", "file"),
+    ]),
+    ("cat_analysis", [
+        ("sec_timeline", "clock"),
+        ("sec_links", "share-2"),
+        ("sec_identities", "contact-round"),
+        ("sec_accounts", "key-round"),
+        ("sec_deleted", "trash-2"),
+    ]),
+    ("cat_workspace", [
+        ("sec_bookmarks", "bookmark"),
+        ("sec_audit", "history"),
+    ]),
 ]
+_SECTIONS = [s for _, items in _SECTION_GROUPS for s in items]
 
 _NAV = ["nav_dashboard", "nav_extract", "nav_analyze", "nav_reports", "nav_tools"]
 _NAV_ICON = {
@@ -342,19 +351,40 @@ class MainWindow(QWidget):
         self.sections_lbl.setObjectName("sectionHeader")
         lay.addWidget(self.sections_lbl)
 
+        # scrollable artifact tree (grouped categories + per-section counts)
+        tree_scroll = QScrollArea()
+        tree_scroll.setWidgetResizable(True)
+        tree_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        tree_scroll.setStyleSheet("background:transparent;border:none;")
+        tree_scroll.viewport().setStyleSheet("background:transparent;")
+        tree_inner = QWidget()
+        tree_lay = QVBoxLayout(tree_inner)
+        tree_lay.setContentsMargins(0, 0, 0, 0)
+        tree_lay.setSpacing(2)
+
         self.section_btns: dict[str, QPushButton] = {}
         self.section_icons: dict[str, str] = {}
-        for key, icon_name in _SECTIONS:
-            b = QPushButton()
-            b.setObjectName("sectionBtn")
-            b.setCheckable(True)
-            b.setIconSize(QSize(18, 18))
-            self.section_icons[key] = icon_name
-            b.clicked.connect(lambda _=False, k=key: self.select_section(k))
-            self.section_btns[key] = b
-            lay.addWidget(b)
-
-        lay.addStretch(1)
+        self.cat_lbls: dict[str, QLabel] = {}
+        for cat_key, items in _SECTION_GROUPS:
+            cat = QLabel()
+            cat.setObjectName("sectionHeader")
+            cat.setStyleSheet(
+                f"color:{theme.TEXT_DIM};font-size:10px;font-weight:700;"
+                f"padding:8px 4px 2px;")
+            self.cat_lbls[cat_key] = cat
+            tree_lay.addWidget(cat)
+            for key, icon_name in items:
+                b = QPushButton()
+                b.setObjectName("sectionBtn")
+                b.setCheckable(True)
+                b.setIconSize(QSize(18, 18))
+                self.section_icons[key] = icon_name
+                b.clicked.connect(lambda _=False, k=key: self.select_section(k))
+                self.section_btns[key] = b
+                tree_lay.addWidget(b)
+        tree_lay.addStretch(1)
+        tree_scroll.setWidget(tree_inner)
+        lay.addWidget(tree_scroll, 1)
         self.end_btn = QPushButton()
         self.end_btn.setObjectName("danger")
         self.end_btn.clicked.connect(self.end_examination)
@@ -589,8 +619,9 @@ class MainWindow(QWidget):
             except Exception:
                 pass
         self.sections_lbl.setText(tr("main_sections"))
-        for key, btn in self.section_btns.items():
-            btn.setText("   " + tr(key))
+        for cat_key, lbl in self.cat_lbls.items():
+            lbl.setText(tr(cat_key).upper())
+        self._refresh_section_labels()
         self._refresh_section_icons()
         self.end_btn.setText(tr("end_exam"))
         self.stats_title_lbl.setText(tr("stats_title"))
@@ -692,6 +723,23 @@ class MainWindow(QWidget):
         for key, btn in self.section_btns.items():
             color = theme.ACCENT if key == self.current_section else "#BFD5E6"
             btn.setIcon(QIcon(nav_icon(self.section_icons[key], 18, color)))
+
+    def _refresh_section_labels(self):
+        """Section label + Cellebrite-style record count badge."""
+        from .datasource import section_count
+        report = self.report
+        for key, btn in self.section_btns.items():
+            name = tr(key)
+            count = None
+            if report:
+                if key == "sec_bookmarks":
+                    count = len(self.bookmarks) or None
+                elif key == "sec_audit":
+                    count = len(self.audit.as_rows()) or None
+                else:
+                    count = section_count(report, key)
+            badge = f"    {count:,}" if count else ""
+            btn.setText(f"   {name}{badge}")
 
     def select_section(self, key: str):
         self.current_section = key
@@ -800,6 +848,9 @@ class MainWindow(QWidget):
     # ------------------------------------------------------------ views
     def refresh_views(self):
         report = self.report or {"artifacts": {}, "device": {}, "meta": {}}
+
+        # section count badges (Cellebrite-style tree)
+        self._refresh_section_labels()
 
         # stats
         for card, (label_key, value) in zip(

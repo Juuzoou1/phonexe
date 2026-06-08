@@ -25,6 +25,10 @@ _STRINGS: dict[str, dict[str, str]] = {
     "device_info": {"ar": "معلومات الجهاز", "en": "Device Info"},
     "connected": {"ar": "تم الاتصال", "en": "Connected"},
     "main_sections": {"ar": "الأقسام الرئيسية", "en": "Main Sections"},
+    "cat_device": {"ar": "الجهاز", "en": "Device"},
+    "cat_data": {"ar": "البيانات المحلّلة", "en": "Analyzed Data"},
+    "cat_analysis": {"ar": "التحليل", "en": "Analytics"},
+    "cat_workspace": {"ar": "مساحة العمل", "en": "Workspace"},
     "end_exam": {"ar": "إنهاء الفحص", "en": "End Examination"},
     # ---- sections ----
     "sec_overview": {"ar": "نظرة عامة", "en": "Overview"},

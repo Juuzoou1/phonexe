@@ -580,6 +580,37 @@ def unified_contacts(report: dict) -> list[dict]:
     return out
 
 
+def section_count(report: dict, section: str) -> int | None:
+    """Cheap record count for a sidebar section (None = no badge)."""
+    if section == "sec_apps":
+        return _social_app_count(report)
+    if section == "sec_installed":
+        return _count(report, "installed_apps")
+    if section == "sec_messages":
+        return (_count(report, "messages") + _count(report, "whatsapp")
+                + _social_total(report))
+    if section == "sec_media":
+        return _count(report, "photos")
+    if section == "sec_calls":
+        return _count(report, "calls")
+    if section == "sec_contacts":
+        return _count(report, "contacts")
+    if section == "sec_browser":
+        return (_count(report, "safari_history") + _count(report, "chrome_history")
+                + _count(report, "safari_bookmarks"))
+    if section == "sec_calendar":
+        return _count(report, "calendar")
+    if section == "sec_notes":
+        return _count(report, "notes")
+    if section == "sec_files":
+        return _count(report, "files")
+    if section == "sec_deleted":
+        return _count(report, "deleted")
+    if section == "sec_location":
+        return len(location_markers(report))
+    return None
+
+
 def section_table(report: dict, section: str
                   ) -> tuple[list[str], list[list[str]], str]:
     """Return (columns, rows, note) for a sidebar section."""
