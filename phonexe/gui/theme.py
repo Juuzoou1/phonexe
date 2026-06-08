@@ -41,6 +41,11 @@ W_LIGHT, W_REG, W_MED, W_SEMI, W_BOLD = 300, 400, 500, 600, 700
 # Soft cyan glow used on key panels.
 GLOW = "rgba(79,227,224,0.08)"
 
+# Translucent "glass" surfaces (let the live constellation show through).
+PANEL_GLASS = "rgba(11, 22, 35, 0.80)"
+CARD_GLASS = "rgba(16, 30, 48, 0.82)"
+CARD_GLASS_HI = "rgba(22, 40, 62, 0.85)"
+
 # Preferred font stack — IBM Plex Sans Arabic primary, per the brief.
 FONT_STACK = ("'IBM Plex Sans Arabic', 'Cairo', 'Segoe UI', "
               "'Tahoma', 'Arial'")
@@ -82,9 +87,10 @@ QPushButton#navBtn:checked {{
     border-bottom: 2px solid {ACCENT};
 }}
 
-/* ---- panels / cards ---- */
+/* ---- panels / cards (frosted glass over the live background) ---- */
 QFrame#panel, QFrame#card {{
-    background: {PANEL}; border: 1px solid {BORDER}; border-radius: 14px;
+    background: {PANEL_GLASS}; border: 1px solid {BORDER};
+    border-radius: 14px;
 }}
 QLabel#panelTitle {{
     font-size: {FS_TITLE}px; font-weight: {W_BOLD}; color: {TEXT};
@@ -131,7 +137,7 @@ QPushButton#danger:hover {{ background: {DANGER}; color: {TEXT}; }}
 /* ---- stat cards ---- */
 QFrame#statCard {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 {CARD}, stop:1 {PANEL});
+        stop:0 {CARD_GLASS_HI}, stop:1 {PANEL_GLASS});
     border: 1px solid {BORDER}; border-radius: 14px;
 }}
 QFrame#statCard:hover {{ border: 1px solid {ACCENT}; }}

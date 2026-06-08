@@ -161,6 +161,15 @@ class MainWindow(QWidget):
         self._worker: AnalyzeWorker | None = None
         self._acq_worker = None
 
+        # live "data constellation" background: drifting nodes + links
+        import random
+        self._nodes = [[random.random(), random.random(),
+                        (random.random() - 0.5) * 0.0014,
+                        (random.random() - 0.5) * 0.0014]
+                       for _ in range(56)]
+        self._bg_timer = QTimer(self)
+        self._bg_timer.timeout.connect(self._tick_nodes)
+
         self.setWindowTitle("phonexe")
         self.resize(1360, 860)
 
@@ -188,9 +197,29 @@ class MainWindow(QWidget):
         self.refresh_views()
 
     # ------------------------------------------------------------ background
+    def showEvent(self, e):  # noqa: N802
+        if not self._bg_timer.isActive():
+            self._bg_timer.start(40)  # ~25 fps living background
+        super().showEvent(e)
+
+    def hideEvent(self, e):  # noqa: N802
+        self._bg_timer.stop()
+        super().hideEvent(e)
+
+    def _tick_nodes(self):
+        for n in self._nodes:
+            n[0] += n[2]
+            n[1] += n[3]
+            if n[0] <= 0 or n[0] >= 1:
+                n[2] = -n[2]
+            if n[1] <= 0 or n[1] >= 1:
+                n[3] = -n[3]
+        self.update()
+
     def paintEvent(self, _e):  # noqa: N802
-        """Dark base with soft ambient cyan/blue glows behind the panels."""
-        from PyQt6.QtGui import QColor, QPainter, QRadialGradient
+        """Dark base + ambient glow + a live drifting 'data constellation'."""
+        from PyQt6.QtCore import QPointF
+        from PyQt6.QtGui import QColor, QPainter, QPen, QRadialGradient
 
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -211,6 +240,33 @@ class MainWindow(QWidget):
         glow(w * 0.82, h * 0.04, w * 0.55, theme.ACCENT, 46)
         glow(w * 0.10, h * 0.96, w * 0.55, theme.ACCENT2, 38)
         glow(w * 0.5, h * 0.45, w * 0.6, theme.ACCENT, 12)
+
+        # ---- live data constellation ----
+        pts = [QPointF(n[0] * w, n[1] * h) for n in self._nodes]
+        thresh = max(w, h) * 0.11
+        accent = QColor(theme.ACCENT)
+        for i in range(len(pts)):
+            a = pts[i]
+            for j in range(i + 1, len(pts)):
+                b = pts[j]
+                dx, dy = a.x() - b.x(), a.y() - b.y()
+                d2 = dx * dx + dy * dy
+                if d2 < thresh * thresh:
+                    alpha = int(46 * (1 - (d2 ** 0.5) / thresh))
+                    if alpha <= 0:
+                        continue
+                    accent.setAlpha(alpha)
+                    p.setPen(QPen(accent, 1))
+                    p.drawLine(a, b)
+        # node dots with a soft halo
+        for a in pts:
+            accent.setAlpha(22)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(accent)
+            p.drawEllipse(a, 5, 5)
+            accent.setAlpha(150)
+            p.setBrush(accent)
+            p.drawEllipse(a, 1.6, 1.6)
         p.end()
 
     # ------------------------------------------------------------ top bar
