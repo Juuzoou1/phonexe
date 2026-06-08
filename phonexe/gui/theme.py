@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-# Core palette — very dark, with a strong blue accent.
-BG = "#010307"          # window background (near pure black)
-PANEL = "#070F1C"       # main panels
-CARD = "#0B1626"        # cards / inner surfaces
-PANEL_ALT = CARD        # alias used across the UI
-BORDER = "#173255"      # borders (bluish definition)
+# Core palette — 4-level elevation system (exact spec tokens).
+LEVEL0 = "#050B12"      # window background
+LEVEL1 = "#08121D"      # main panels
+LEVEL2 = "#0D1724"      # nested cards / inner surfaces
+LEVEL3 = "#112132"      # inputs / hover / deepest nesting
+BG = LEVEL0
+PANEL = LEVEL1
+CARD = LEVEL2
+PANEL_ALT = LEVEL2      # alias used across the UI
+BORDER = "#14304A"      # borders
 TEXT = "#F4F8FC"        # text primary
 TEXT_DIM = "#90A6BC"    # text secondary
 ACCENT = "#4FE3E0"      # primary accent (cyan)
@@ -81,16 +85,16 @@ QPushButton#navBtn {{
     background: transparent; border: none; padding: 10px 16px;
     color: {TEXT_DIM}; font-size: {FS_BODY}px; border-radius: {RADIUS_INPUT}px;
 }}
-QPushButton#navBtn:hover {{ color: {TEXT}; background: {PANEL}; }}
+QPushButton#navBtn:hover {{ color: {TEXT}; background: {LEVEL2}; }}
 QPushButton#navBtn:checked {{
-    color: {ACCENT}; background: {PANEL};
+    color: {ACCENT}; background: {LEVEL2};
     border-bottom: 2px solid {ACCENT};
 }}
 
-/* ---- panels / cards (frosted glass over the live background) ---- */
+/* ---- panels / cards (solid, 1px border, 12px radius per spec) ---- */
 QFrame#panel, QFrame#card {{
-    background: {PANEL_GLASS}; border: 1px solid {BORDER};
-    border-radius: 14px;
+    background: {PANEL}; border: 1px solid {BORDER};
+    border-radius: 12px;
 }}
 QLabel#panelTitle {{
     font-size: {FS_TITLE}px; font-weight: {W_BOLD}; color: {TEXT};
@@ -105,9 +109,9 @@ QPushButton#sectionBtn {{
     padding: 10px 14px; color: {TEXT_DIM}; font-size: {FS_BODY}px;
     border-radius: {RADIUS_INPUT}px;
 }}
-QPushButton#sectionBtn:hover {{ background: {PANEL_ALT}; color: {TEXT}; }}
+QPushButton#sectionBtn:hover {{ background: {LEVEL3}; color: {TEXT}; }}
 QPushButton#sectionBtn:checked {{
-    background: {PANEL_ALT}; color: {ACCENT};
+    background: {LEVEL2}; color: {ACCENT};
     border-left: 3px solid {ACCENT};
 }}
 
@@ -136,37 +140,35 @@ QPushButton#danger:hover {{ background: {DANGER}; color: {TEXT}; }}
 
 /* ---- stat cards ---- */
 QFrame#statCard {{
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 {CARD_GLASS_HI}, stop:1 {PANEL_GLASS});
-    border: 1px solid {BORDER}; border-radius: 14px;
+    background: {LEVEL2}; border: 1px solid {BORDER}; border-radius: 12px;
 }}
-QFrame#statCard:hover {{ border: 1px solid {ACCENT}; }}
+QFrame#statCard:hover {{ background: {LEVEL3}; border: 1px solid {ACCENT}; }}
 QLabel#statValue {{ font-size: {FS_DISPLAY + 6}px; font-weight: {W_BOLD}; }}
 QLabel#statLabel {{ font-size: {FS_LABEL}px; color: {TEXT_DIM};
     font-weight: {W_MED}; }}
 
 /* ---- tables ---- */
 QTableView, QTableWidget {{
-    background: {PANEL}; border: 1px solid {BORDER}; border-radius: 10px;
+    background: {LEVEL1}; border: 1px solid {BORDER}; border-radius: 12px;
     gridline-color: {BORDER}; selection-background-color: {ACCENT_DIM};
     selection-color: {TEXT};
 }}
 QHeaderView::section {{
-    background: {PANEL_ALT}; color: {TEXT_DIM}; border: none;
+    background: {LEVEL2}; color: {TEXT_DIM}; border: none;
     border-bottom: 1px solid {BORDER}; padding: 8px; font-weight: 600;
 }}
 QTableWidget::item {{ padding: 6px; }}
 
 /* ---- inputs ---- */
 QLineEdit {{
-    background: {PANEL_ALT}; border: 1px solid {BORDER}; border-radius: 8px;
+    background: {LEVEL3}; border: 1px solid {BORDER}; border-radius: 8px;
     padding: 8px 12px; color: {TEXT};
 }}
 QLineEdit:focus {{ border-color: {ACCENT}; }}
 
 /* ---- device card ---- */
 QFrame#deviceCard {{
-    background: {PANEL_ALT}; border: 1px solid {BORDER}; border-radius: 10px;
+    background: {LEVEL2}; border: 1px solid {BORDER}; border-radius: 12px;
 }}
 QLabel#deviceName {{ font-size: {FS_BODY + 1}px; font-weight: {W_BOLD}; }}
 QLabel#deviceMeta {{ font-size: {FS_SMALL}px; color: {TEXT_DIM}; }}

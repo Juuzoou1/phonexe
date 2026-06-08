@@ -256,31 +256,31 @@ class MainWindow(QWidget):
                     t = 1 - (d2 ** 0.5) / thresh
                     if t <= 0:
                         continue
-                    # wide soft glow underlay, then a crisp bright core line
-                    blue.setAlpha(int(40 * t))
-                    p.setPen(QPen(blue, 3.2))
+                    # subtle blue link (soft underlay + faint core)
+                    blue.setAlpha(int(22 * t))
+                    p.setPen(QPen(blue, 2.4))
                     p.drawLine(a, b)
-                    blue.setAlpha(int(120 * t))
+                    blue.setAlpha(int(64 * t))
                     p.setPen(QPen(blue, 1.0))
                     p.drawLine(a, b)
-        # glowing nodes
+        # faint nodes
         p.setPen(Qt.PenStyle.NoPen)
         for a in pts:
-            blue.setAlpha(34)
+            blue.setAlpha(18)
             p.setBrush(blue)
-            p.drawEllipse(a, 8, 8)        # halo
-            blue.setAlpha(110)
+            p.drawEllipse(a, 6, 6)        # halo
+            blue.setAlpha(70)
             p.setBrush(blue)
-            p.drawEllipse(a, 3.4, 3.4)
-            p.setBrush(_QC(210, 240, 255, 235))
-            p.drawEllipse(a, 1.5, 1.5)    # bright core
+            p.drawEllipse(a, 2.4, 2.4)
+            p.setBrush(_QC(200, 230, 255, 170))
+            p.drawEllipse(a, 1.2, 1.2)    # core
         p.end()
 
     # ------------------------------------------------------------ top bar
     def _build_topbar(self) -> QWidget:
         bar = QWidget()
         bar.setObjectName("topbar")
-        bar.setFixedHeight(64)
+        bar.setFixedHeight(72)
         lay = QHBoxLayout(bar)
         lay.setContentsMargins(18, 8, 18, 8)
         lay.setSpacing(16)
@@ -340,7 +340,7 @@ class MainWindow(QWidget):
     def _build_sidebar(self) -> QWidget:
         panel = QFrame()
         panel.setObjectName("panel")
-        panel.setFixedWidth(258)
+        panel.setFixedWidth(280)
         lay = QVBoxLayout(panel)
         lay.setContentsMargins(14, 14, 14, 14)
         lay.setSpacing(10)
