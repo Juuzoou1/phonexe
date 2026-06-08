@@ -22,6 +22,22 @@ RADIUS_CARD = 12
 RADIUS_BTN = 10
 RADIUS_INPUT = 8
 
+# ---- Design system tokens ----------------------------------------------
+# Spacing scale (4 / 8 px base) — use these instead of arbitrary margins.
+SP_1, SP_2, SP_3, SP_4, SP_5, SP_6 = 4, 8, 12, 16, 24, 32
+
+# Type scale (px) — one coherent ramp used across the whole UI.
+FS_DISPLAY = 26   # stat numbers / hero
+FS_TITLE = 20     # page / panel titles
+FS_HEADING = 15   # section headings, app titles
+FS_BODY = 13      # default body
+FS_LABEL = 12     # secondary labels
+FS_SMALL = 11     # captions, dim meta
+FS_MICRO = 10     # category headers, tiny meta
+
+# Font weights.
+W_LIGHT, W_REG, W_MED, W_SEMI, W_BOLD = 300, 400, 500, 600, 700
+
 # Soft cyan glow used on key panels.
 GLOW = "rgba(79,227,224,0.08)"
 
@@ -37,6 +53,7 @@ def stylesheet() -> str:
     return f"""
 * {{
     font-family: {FONT_STACK};
+    font-size: {FS_BODY}px;
     color: {TEXT};
     outline: none;
 }}
@@ -48,15 +65,15 @@ QWidget#topbar {{
     background: {PANEL_ALT};
     border-bottom: 1px solid {BORDER};
 }}
-QLabel#appTitle {{ font-size: 16px; font-weight: 700; color: {TEXT}; }}
-QLabel#appSubtitle {{ font-size: 11px; color: {TEXT_DIM}; }}
-QLabel#clock {{ font-size: 15px; font-weight: 600; color: {ACCENT}; }}
-QLabel#clockDate {{ font-size: 11px; color: {TEXT_DIM}; }}
+QLabel#appTitle {{ font-size: {FS_HEADING + 1}px; font-weight: {W_BOLD}; color: {TEXT}; }}
+QLabel#appSubtitle {{ font-size: {FS_SMALL}px; color: {TEXT_DIM}; }}
+QLabel#clock {{ font-size: {FS_HEADING}px; font-weight: {W_SEMI}; color: {ACCENT}; }}
+QLabel#clockDate {{ font-size: {FS_SMALL}px; color: {TEXT_DIM}; }}
 
 /* ---- top nav buttons ---- */
 QPushButton#navBtn {{
     background: transparent; border: none; padding: 10px 16px;
-    color: {TEXT_DIM}; font-size: 13px; border-radius: 8px;
+    color: {TEXT_DIM}; font-size: {FS_BODY}px; border-radius: {RADIUS_INPUT}px;
 }}
 QPushButton#navBtn:hover {{ color: {TEXT}; background: {PANEL}; }}
 QPushButton#navBtn:checked {{
@@ -68,13 +85,14 @@ QPushButton#navBtn:checked {{
 QFrame#panel, QFrame#card {{
     background: {PANEL}; border: 1px solid {BORDER}; border-radius: 12px;
 }}
-QLabel#panelTitle {{ font-size: 13px; font-weight: 600; color: {TEXT}; }}
-QLabel#sectionHeader {{ font-size: 12px; color: {TEXT_DIM}; font-weight: 600; }}
+QLabel#panelTitle {{ font-size: {FS_HEADING}px; font-weight: {W_SEMI}; color: {TEXT}; }}
+QLabel#sectionHeader {{ font-size: {FS_LABEL}px; color: {TEXT_DIM}; font-weight: {W_SEMI}; }}
 
 /* ---- sidebar section buttons ---- */
 QPushButton#sectionBtn {{
     background: transparent; border: none; text-align: left;
-    padding: 11px 14px; color: {TEXT_DIM}; font-size: 13px; border-radius: 8px;
+    padding: 10px 14px; color: {TEXT_DIM}; font-size: {FS_BODY}px;
+    border-radius: {RADIUS_INPUT}px;
 }}
 QPushButton#sectionBtn:hover {{ background: {PANEL_ALT}; color: {TEXT}; }}
 QPushButton#sectionBtn:checked {{
@@ -103,8 +121,8 @@ QPushButton#danger:hover {{ background: {DANGER}; color: {TEXT}; }}
 QFrame#statCard {{
     background: {PANEL}; border: 1px solid {BORDER}; border-radius: 12px;
 }}
-QLabel#statValue {{ font-size: 26px; font-weight: 700; }}
-QLabel#statLabel {{ font-size: 12px; color: {TEXT_DIM}; }}
+QLabel#statValue {{ font-size: {FS_DISPLAY}px; font-weight: {W_BOLD}; }}
+QLabel#statLabel {{ font-size: {FS_LABEL}px; color: {TEXT_DIM}; }}
 
 /* ---- tables ---- */
 QTableView, QTableWidget {{
@@ -129,10 +147,10 @@ QLineEdit:focus {{ border-color: {ACCENT}; }}
 QFrame#deviceCard {{
     background: {PANEL_ALT}; border: 1px solid {BORDER}; border-radius: 10px;
 }}
-QLabel#deviceName {{ font-size: 14px; font-weight: 700; }}
-QLabel#deviceMeta {{ font-size: 11px; color: {TEXT_DIM}; }}
-QLabel#statusOk {{ color: {OK}; font-size: 11px; font-weight: 600; }}
-QLabel#noteLabel {{ color: {TEXT_DIM}; font-size: 11px; }}
+QLabel#deviceName {{ font-size: {FS_BODY + 1}px; font-weight: {W_BOLD}; }}
+QLabel#deviceMeta {{ font-size: {FS_SMALL}px; color: {TEXT_DIM}; }}
+QLabel#statusOk {{ color: {OK}; font-size: {FS_SMALL}px; font-weight: {W_SEMI}; }}
+QLabel#noteLabel {{ color: {TEXT_DIM}; font-size: {FS_SMALL}px; }}
 
 /* ---- scrollbars ---- */
 QScrollBar:vertical {{ background: transparent; width: 10px; margin: 2px; }}
