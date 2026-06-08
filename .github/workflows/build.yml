@@ -3,7 +3,11 @@ name: build
 on:
   push:
     branches: ["**"]
+    tags: ["v*"]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -35,7 +39,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller Pillow PyQt6
+          pip install pyinstaller Pillow PyQt6 PyQt6-Fluent-Widgets
           pip install pymobiledevice3 || echo "pymobiledevice3 optional - skipped"
       - name: Build phonexe.exe
         run: python build_exe.py
@@ -55,3 +59,18 @@ jobs:
           name: phonexe-setup
           path: installer/Output/phonexe-setup.exe
           if-no-files-found: error
+      - name: Publish GitHub Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: phonexe ${{ github.ref_name }}
+          body: |
+            phonexe — Digital Forensics Platform (Windows).
+
+            - **phonexe-setup.exe** — installer. Install code: `2002`.
+            - **phonexe.exe** — standalone executable.
+
+            On first launch the app asks for the activation code `2002`.
+          files: |
+            installer/Output/phonexe-setup.exe
+            dist/phonexe.exe
