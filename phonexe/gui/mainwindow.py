@@ -236,15 +236,16 @@ class MainWindow(QWidget):
             g.setColorAt(1.0, c2)
             p.fillRect(self.rect(), g)
 
-        # cyan aura top-right, blue aura bottom-left, faint center lift
-        glow(w * 0.82, h * 0.04, w * 0.55, theme.ACCENT, 46)
-        glow(w * 0.10, h * 0.96, w * 0.55, theme.ACCENT2, 38)
-        glow(w * 0.5, h * 0.45, w * 0.6, theme.ACCENT, 12)
+        # darker, blue-dominant ambient auras
+        glow(w * 0.82, h * 0.04, w * 0.55, theme.ACCENT2, 40)
+        glow(w * 0.10, h * 0.96, w * 0.55, theme.ACCENT2, 34)
+        glow(w * 0.5, h * 0.45, w * 0.6, theme.ACCENT2, 8)
 
-        # ---- live data constellation ----
+        # ---- live data constellation: strong blue glow ----
+        from PyQt6.QtGui import QColor as _QC
         pts = [QPointF(n[0] * w, n[1] * h) for n in self._nodes]
         thresh = max(w, h) * 0.11
-        accent = QColor(theme.ACCENT)
+        blue = _QC("#3AB8FF")          # vivid blue
         for i in range(len(pts)):
             a = pts[i]
             for j in range(i + 1, len(pts)):
@@ -252,21 +253,27 @@ class MainWindow(QWidget):
                 dx, dy = a.x() - b.x(), a.y() - b.y()
                 d2 = dx * dx + dy * dy
                 if d2 < thresh * thresh:
-                    alpha = int(46 * (1 - (d2 ** 0.5) / thresh))
-                    if alpha <= 0:
+                    t = 1 - (d2 ** 0.5) / thresh
+                    if t <= 0:
                         continue
-                    accent.setAlpha(alpha)
-                    p.setPen(QPen(accent, 1))
+                    # wide soft glow underlay, then a crisp bright core line
+                    blue.setAlpha(int(40 * t))
+                    p.setPen(QPen(blue, 3.2))
                     p.drawLine(a, b)
-        # node dots with a soft halo
+                    blue.setAlpha(int(120 * t))
+                    p.setPen(QPen(blue, 1.0))
+                    p.drawLine(a, b)
+        # glowing nodes
+        p.setPen(Qt.PenStyle.NoPen)
         for a in pts:
-            accent.setAlpha(22)
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(accent)
-            p.drawEllipse(a, 5, 5)
-            accent.setAlpha(150)
-            p.setBrush(accent)
-            p.drawEllipse(a, 1.6, 1.6)
+            blue.setAlpha(34)
+            p.setBrush(blue)
+            p.drawEllipse(a, 8, 8)        # halo
+            blue.setAlpha(110)
+            p.setBrush(blue)
+            p.drawEllipse(a, 3.4, 3.4)
+            p.setBrush(_QC(210, 240, 255, 235))
+            p.drawEllipse(a, 1.5, 1.5)    # bright core
         p.end()
 
     # ------------------------------------------------------------ top bar

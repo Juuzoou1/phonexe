@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-# Core palette — design brief values, deepened for a darker look.
-BG = "#02060B"          # window background (near-black)
-PANEL = "#0B1623"       # main panels (lifted for clearer separation)
-CARD = "#101E30"        # cards / inner surfaces
+# Core palette — very dark, with a strong blue accent.
+BG = "#010307"          # window background (near pure black)
+PANEL = "#070F1C"       # main panels
+CARD = "#0B1626"        # cards / inner surfaces
 PANEL_ALT = CARD        # alias used across the UI
-BORDER = "#1A3050"      # borders (a touch brighter for definition)
+BORDER = "#173255"      # borders (bluish definition)
 TEXT = "#F4F8FC"        # text primary
 TEXT_DIM = "#90A6BC"    # text secondary
 ACCENT = "#4FE3E0"      # primary accent (cyan)
@@ -42,9 +42,9 @@ W_LIGHT, W_REG, W_MED, W_SEMI, W_BOLD = 300, 400, 500, 600, 700
 GLOW = "rgba(79,227,224,0.08)"
 
 # Translucent "glass" surfaces (let the live constellation show through).
-PANEL_GLASS = "rgba(11, 22, 35, 0.80)"
-CARD_GLASS = "rgba(16, 30, 48, 0.82)"
-CARD_GLASS_HI = "rgba(22, 40, 62, 0.85)"
+PANEL_GLASS = "rgba(7, 15, 28, 0.82)"
+CARD_GLASS = "rgba(11, 22, 38, 0.84)"
+CARD_GLASS_HI = "rgba(16, 30, 52, 0.86)"
 
 # Preferred font stack — IBM Plex Sans Arabic primary, per the brief.
 FONT_STACK = ("'IBM Plex Sans Arabic', 'Cairo', 'Segoe UI', "
