@@ -151,6 +151,21 @@ Reports are written to `report/report.json` and `report/report.html`.
 
 ---
 
+## Windows installer & activation code
+
+CI also builds a password-protected Windows installer
+(`installer/Output/phonexe-setup.exe`) via Inno Setup:
+
+- The **installer asks for a secret code** before it will install: `2002`.
+- On first launch, the app shows an **activation gate** requiring the same
+  code `2002`; once entered it is remembered on that machine.
+
+Build the installer manually on Windows (after `python build_exe.py`):
+
+```bat
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\phonexe.iss
+```
+
 ## Build the Windows EXE
 
 A PyInstaller binary must be built **on the target OS**, so build the Windows

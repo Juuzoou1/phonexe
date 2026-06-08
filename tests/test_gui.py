@@ -282,3 +282,21 @@ def test_case_setup_wizard(tmp_path):
     assert res["device_info"]["name"] == "Suspect iPhone"
     assert "350000000000001" == res["device_info"]["imei"]
     app.processEvents()
+
+
+def test_license_gate():
+    pytest.importorskip("PyQt6.QtWidgets")
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    try:
+        from PyQt6.QtWidgets import QApplication, QDialog
+        from phonexe.gui.license import check_code, LicenseDialog
+    except Exception:
+        pytest.skip("Qt unavailable")
+    assert check_code("2002") is True
+    assert check_code("0000") is False
+    app = QApplication.instance() or QApplication([])
+    dlg = LicenseDialog()
+    dlg.code_edit.setText("2002")
+    dlg._try()
+    assert dlg.result() == QDialog.DialogCode.Accepted
+    app.processEvents()

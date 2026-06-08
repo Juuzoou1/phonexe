@@ -24,6 +24,11 @@ def run(argv: list[str] | None = None) -> int:
         pass
     app.setStyleSheet(theme.stylesheet())
 
+    # activation gate: require the secret code before anything else
+    from .license import ensure_activated
+    if not ensure_activated():
+        return 0
+
     # case-setup wizard first: examiner + case number, then connect/open
     from PyQt6.QtWidgets import QDialog
     from .startup import CaseSetupDialog

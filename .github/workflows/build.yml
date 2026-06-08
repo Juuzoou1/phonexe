@@ -45,3 +45,13 @@ jobs:
           name: phonexe-windows
           path: dist/phonexe.exe
           if-no-files-found: error
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+      - name: Build Windows installer (password-protected)
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\phonexe.iss'
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: phonexe-setup
+          path: installer/Output/phonexe-setup.exe
+          if-no-files-found: error
