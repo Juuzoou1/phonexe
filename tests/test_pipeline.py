@@ -132,3 +132,27 @@ def test_installed_and_bookmarks(backup):
     bm = bookmarks.extract(backup)
     assert bm["count"] == 1
     assert bm["records"][0]["url"] == "https://example.com"
+
+
+def test_api_server(backup, tmp_path):
+    import json
+    import threading
+    import time
+    import urllib.request
+    from phonexe import server
+    from phonexe.analyze import analyze
+
+    httpd = server.serve("127.0.0.1", 8791, report=analyze(str(backup.path)))
+    t = threading.Thread(target=httpd.serve_forever, daemon=True)
+    t.start()
+    time.sleep(0.2)
+    try:
+        def get(p):
+            return json.loads(urllib.request.urlopen("http://127.0.0.1:8791" + p).read())
+        assert get("/api/health")["ok"] is True
+        ov = get("/api/overview")
+        assert any(s["key"] == "stat_messages" for s in ov["stats"])
+        assert len(get("/api/section?key=sec_messages")["rows"]) == 24
+        assert len(get("/api/app?key=whatsapp")["conversations"]) == 6
+    finally:
+        httpd.shutdown()

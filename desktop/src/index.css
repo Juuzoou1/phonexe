@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  margin: 0;
+  background: #050b12;
+  color: #f4f8fc;
+  font-family: "IBM Plex Sans Arabic", Cairo, "Segoe UI", Tahoma, sans-serif;
+}
+
+/* thin custom scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #14304a; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #1f7e7c; }
+::-webkit-scrollbar-track { background: transparent; }

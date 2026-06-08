@@ -320,6 +320,11 @@ def _cmd_acquire_ios(args) -> int:
     return _cmd_analyze(args)
 
 
+def _cmd_serve(args) -> int:
+    from . import server
+    return server.run(args.host, args.port)
+
+
 def _cmd_gui(args) -> int:
     try:
         from .gui.app import run as run_gui
@@ -395,6 +400,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_acq.add_argument("--examiner", help="examiner name (recorded in report)")
     p_acq.add_argument("--case-id", help="case identifier (recorded in report)")
     p_acq.set_defaults(func=_cmd_acquire_ios)
+
+    # ---- local API server (for the Electron/React frontend) ----
+    p_srv = sub.add_parser("serve", help="run the local JSON API server")
+    p_srv.add_argument("--host", default="127.0.0.1")
+    p_srv.add_argument("--port", type=int, default=8765)
+    p_srv.set_defaults(func=_cmd_serve)
 
     # ---- desktop GUI ----
     p_gui = sub.add_parser("gui", help="launch the desktop GUI (PyQt6)")
