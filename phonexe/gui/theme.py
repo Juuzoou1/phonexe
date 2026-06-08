@@ -4,10 +4,10 @@ from __future__ import annotations
 
 # Core palette — design brief values, deepened for a darker look.
 BG = "#02060B"          # window background (near-black)
-PANEL = "#060D16"       # main panels
-CARD = "#0A131E"        # cards / inner surfaces
+PANEL = "#0B1623"       # main panels (lifted for clearer separation)
+CARD = "#101E30"        # cards / inner surfaces
 PANEL_ALT = CARD        # alias used across the UI
-BORDER = "#11233A"      # borders
+BORDER = "#1A3050"      # borders (a touch brighter for definition)
 TEXT = "#F4F8FC"        # text primary
 TEXT_DIM = "#90A6BC"    # text secondary
 ACCENT = "#4FE3E0"      # primary accent (cyan)
@@ -62,8 +62,9 @@ QMainWindow {{ background: {BG}; }}
 
 /* ---- top bar ---- */
 QWidget#topbar {{
-    background: {PANEL_ALT};
-    border-bottom: 1px solid {BORDER};
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {PANEL}, stop:1 {BG});
+    border-bottom: 1px solid {ACCENT_DIM};
 }}
 QLabel#appTitle {{ font-size: {FS_HEADING + 1}px; font-weight: {W_BOLD}; color: {TEXT}; }}
 QLabel#appSubtitle {{ font-size: {FS_SMALL}px; color: {TEXT_DIM}; }}
@@ -83,9 +84,13 @@ QPushButton#navBtn:checked {{
 
 /* ---- panels / cards ---- */
 QFrame#panel, QFrame#card {{
-    background: {PANEL}; border: 1px solid {BORDER}; border-radius: 12px;
+    background: {PANEL}; border: 1px solid {BORDER}; border-radius: 14px;
 }}
-QLabel#panelTitle {{ font-size: {FS_HEADING}px; font-weight: {W_SEMI}; color: {TEXT}; }}
+QLabel#panelTitle {{
+    font-size: {FS_TITLE}px; font-weight: {W_BOLD}; color: {TEXT};
+    border-right: 3px solid {ACCENT}; padding-right: 10px;
+    margin-bottom: 2px;
+}}
 QLabel#sectionHeader {{ font-size: {FS_LABEL}px; color: {TEXT_DIM}; font-weight: {W_SEMI}; }}
 
 /* ---- sidebar section buttons ---- */
@@ -102,10 +107,16 @@ QPushButton#sectionBtn:checked {{
 
 /* ---- buttons ---- */
 QPushButton#primary {{
-    background: {ACCENT_DIM}; color: {TEXT}; border: 1px solid {ACCENT};
-    border-radius: 10px; padding: 9px 16px; font-weight: 600;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 {ACCENT}, stop:1 {ACCENT2});
+    color: {BG}; border: none;
+    border-radius: {RADIUS_BTN}px; padding: 10px 16px;
+    font-size: {FS_BODY}px; font-weight: {W_BOLD};
 }}
-QPushButton#primary:hover {{ background: {ACCENT}; color: {BG}; }}
+QPushButton#primary:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 {ACCENT2}, stop:1 {ACCENT});
+}}
 QPushButton#ghost {{
     background: transparent; color: {TEXT_DIM}; border: 1px solid {BORDER};
     border-radius: 8px; padding: 8px 14px;
@@ -119,10 +130,14 @@ QPushButton#danger:hover {{ background: {DANGER}; color: {TEXT}; }}
 
 /* ---- stat cards ---- */
 QFrame#statCard {{
-    background: {PANEL}; border: 1px solid {BORDER}; border-radius: 12px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {CARD}, stop:1 {PANEL});
+    border: 1px solid {BORDER}; border-radius: 14px;
 }}
-QLabel#statValue {{ font-size: {FS_DISPLAY}px; font-weight: {W_BOLD}; }}
-QLabel#statLabel {{ font-size: {FS_LABEL}px; color: {TEXT_DIM}; }}
+QFrame#statCard:hover {{ border: 1px solid {ACCENT}; }}
+QLabel#statValue {{ font-size: {FS_DISPLAY + 6}px; font-weight: {W_BOLD}; }}
+QLabel#statLabel {{ font-size: {FS_LABEL}px; color: {TEXT_DIM};
+    font-weight: {W_MED}; }}
 
 /* ---- tables ---- */
 QTableView, QTableWidget {{
