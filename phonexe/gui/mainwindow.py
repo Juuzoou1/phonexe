@@ -395,18 +395,14 @@ class MainWindow(QWidget):
         self.device_info_btn.clicked.connect(self._show_device_info)
         lay.addWidget(self.device_info_btn)
 
-        # open buttons
+        # open buttons — a single auto-detecting "open source" + open report
         self.open_ios_btn = PrimaryPushButton()
         self.open_ios_btn.setObjectName("primary")
-        self.open_ios_btn.clicked.connect(lambda: self.open_dir("ios"))
-        self.open_android_btn = PushButton()
-        self.open_android_btn.setObjectName("ghost")
-        self.open_android_btn.clicked.connect(lambda: self.open_dir("android"))
+        self.open_ios_btn.clicked.connect(lambda: self.open_dir("auto"))
         self.open_report_btn = PushButton()
         self.open_report_btn.setObjectName("ghost")
         self.open_report_btn.clicked.connect(self.open_report_file)
         lay.addWidget(self.open_ios_btn)
-        lay.addWidget(self.open_android_btn)
         lay.addWidget(self.open_report_btn)
 
         lay.addWidget(hline())
@@ -670,13 +666,11 @@ class MainWindow(QWidget):
         self.connected_lbl.setText(tr("connected_device"))
         self.dev_status_lbl.setText("● " + tr("connected"))
         self.device_info_btn.setText(tr("device_info"))
-        self.open_ios_btn.setText(tr("open_ios"))
-        self.open_android_btn.setText(tr("open_android"))
+        self.open_ios_btn.setText(tr("open_source"))
         self.open_report_btn.setText(tr("open_report"))
         if FluentIcon is not None:
             try:
                 self.open_ios_btn.setIcon(FluentIcon.PHONE)
-                self.open_android_btn.setIcon(FluentIcon.PHONE)
                 self.open_report_btn.setIcon(FluentIcon.DOCUMENT)
                 self.device_info_btn.setIcon(FluentIcon.INFO)
             except Exception:
@@ -868,6 +862,22 @@ class MainWindow(QWidget):
             self._acq_worker.done.connect(self._on_done)
             self._acq_worker.failed.connect(self._on_failed)
             self._acq_worker.start()
+        elif kind == "adb":
+            self.add_event(tr("loading"))
+            self.donut.set_percent(5)
+            self.audit.record("adb_extraction_started", value)
+            try:
+                from ..android import adb
+                artifacts = adb.logical_extract(value)
+                report = {
+                    "meta": {"platform": "android", "acquisition": "adb-logical",
+                             "device_serial": value},
+                    "device": adb.device_info(value),
+                    "artifacts": artifacts,
+                }
+                self._on_done(report)
+            except Exception as e:
+                self._on_failed(str(e))
 
     def _on_progress(self, name: str):
         self.add_event(name)

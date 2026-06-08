@@ -84,7 +84,7 @@ _STRINGS: dict[str, dict[str, str]] = {
               "4) Press \"Detect Device\".",
     },
     "detect_device": {"ar": "كشف الجهاز", "en": "Detect Device"},
-    "open_source": {"ar": "أو افتح نسخة/استخراج", "en": "Or open backup/extraction"},
+    "open_source": {"ar": "فتح مصدر / استخراج", "en": "Open source / extraction"},
     "no_device_found": {"ar": "لا يوجد جهاز متصل — استخدم \"فتح نسخة/استخراج\".",
                         "en": "No device connected — use \"open backup\"."},
     "start_exam": {"ar": "ابدأ الفحص", "en": "Start Examination"},

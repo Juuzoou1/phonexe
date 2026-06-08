@@ -132,6 +132,70 @@ class Donut(QWidget):
         p.end()
 
 
+class NeonPhone(QWidget):
+    """A geometric line-art phone whose strokes glow white neon."""
+
+    def __init__(self):
+        super().__init__()
+        self.setMinimumSize(220, 360)
+
+    def paintEvent(self, _e):  # noqa: N802
+        from PyQt6.QtCore import QPointF, QRectF
+        from PyQt6.QtGui import QPainterPath
+
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        side = min(w, h - 20)
+        bw = side * 0.52
+        bh = side * 0.96
+        x = (w - bw) / 2
+        y = (h - bh) / 2
+        body = QRectF(x, y, bw, bh)
+        r = bw * 0.16
+
+        def neon(draw):
+            """Render a draw-callable 3x: wide soft halo -> crisp white core."""
+            for width, alpha in ((9, 26), (4.5, 70), (1.6, 255)):
+                pen = QPen(QColor(255, 255, 255, alpha), width)
+                pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+                p.setPen(pen)
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                draw()
+
+        # phone body outline
+        neon(lambda: p.drawRoundedRect(body, r, r))
+        # dynamic island
+        island = QRectF(x + bw / 2 - bw * 0.16, y + bh * 0.04,
+                        bw * 0.32, bh * 0.022)
+        neon(lambda: p.drawRoundedRect(island, island.height() / 2,
+                                       island.height() / 2))
+
+        # inner geometric "scan / circuit" motif
+        cx = x + bw / 2
+        gx0, gx1 = x + bw * 0.16, x + bw * 0.84
+        # horizontal scan lines
+        for fy in (0.30, 0.46, 0.62, 0.78):
+            yy = y + bh * fy
+            neon(lambda yy=yy: p.drawLine(QPointF(gx0, yy), QPointF(gx1, yy)))
+        # vertical spine
+        neon(lambda: p.drawLine(QPointF(cx, y + bh * 0.16),
+                                QPointF(cx, y + bh * 0.86)))
+        # node dots along the spine
+        for fy in (0.30, 0.46, 0.62, 0.78):
+            yy = y + bh * fy
+            for nx in (gx0, cx, gx1):
+                for rad, alpha in ((6, 40), (2.4, 255)):
+                    p.setPen(Qt.PenStyle.NoPen)
+                    p.setBrush(QColor(255, 255, 255, alpha))
+                    p.drawEllipse(QPointF(nx, yy), rad, rad)
+        # home indicator
+        ind = QRectF(cx - bw * 0.12, y + bh * 0.93, bw * 0.24, bh * 0.012)
+        neon(lambda: p.drawRoundedRect(ind, ind.height() / 2, ind.height() / 2))
+        p.end()
+
+
 class PhoneOutline(QWidget):
     """A near-realistic, screen-lit smartphone with a tiny live home screen."""
 

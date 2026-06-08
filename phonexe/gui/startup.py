@@ -29,7 +29,7 @@ class CaseSetupDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("phonexe")
-        self.resize(620, 560)
+        self.resize(720, 600)
         self.source: tuple[str, str] | None = None  # ("path"|"acquire", value)
         self.device_info: dict = {}
 
@@ -96,38 +96,55 @@ class CaseSetupDialog(QDialog):
 
     # ----------------------------------------------------------- page 2
     def _page_connect(self) -> QWidget:
+        from .widgets import NeonPhone
         w = QWidget()
         lay = QVBoxLayout(w)
-        lay.setContentsMargins(40, 30, 40, 30)
-        lay.setSpacing(12)
+        lay.setContentsMargins(34, 24, 34, 24)
+        lay.setSpacing(16)
 
         self.p2_title = QLabel()
         self.p2_title.setStyleSheet(
             f"color:{theme.TEXT};font-size:18px;font-weight:700;")
         lay.addWidget(self.p2_title)
 
+        body = QHBoxLayout()
+        body.setSpacing(20)
+
+        # big square card with the glowing neon line-art phone
+        square = QFrame()
+        square.setObjectName("deviceCard")
+        square.setFixedSize(300, 360)
+        square.setStyleSheet(
+            f"#deviceCard{{background:{theme.LEVEL2};border:1px solid "
+            f"{theme.BORDER};border-radius:12px;}}")
+        sq = QVBoxLayout(square)
+        sq.setContentsMargins(8, 8, 8, 8)
+        sq.addWidget(NeonPhone())
+        body.addWidget(square, 0)
+
+        # instructions + actions + detected device
+        side = QVBoxLayout()
+        side.setSpacing(12)
         self.steps_lbl = QLabel()
         self.steps_lbl.setWordWrap(True)
         self.steps_lbl.setStyleSheet(
-            f"color:{theme.TEXT_DIM};font-size:13px;line-height:1.6;")
-        lay.addWidget(self.steps_lbl)
+            f"color:{theme.TEXT_DIM};font-size:13px;line-height:1.7;")
+        side.addWidget(self.steps_lbl)
 
-        row = QHBoxLayout()
         self.detect_btn = PrimaryPushButton()
-        self.detect_btn.setMinimumHeight(38)
+        self.detect_btn.setMinimumHeight(42)
         self.detect_btn.clicked.connect(self._detect)
         self.open_btn = PushButton()
         self.open_btn.setMinimumHeight(38)
         self.open_btn.clicked.connect(self._open_source)
-        row.addWidget(self.detect_btn)
-        row.addWidget(self.open_btn)
-        lay.addLayout(row)
+        side.addWidget(self.detect_btn)
+        side.addWidget(self.open_btn)
 
         self.device_card = QFrame()
         self.device_card.setObjectName("deviceCard")
         self.device_card.setStyleSheet(
-            f"#deviceCard{{background:{theme.CARD};border:1px solid "
-            f"{theme.BORDER};border-radius:10px;}}")
+            f"#deviceCard{{background:{theme.LEVEL2};border:1px solid "
+            f"{theme.BORDER};border-radius:12px;}}")
         dcl = QVBoxLayout(self.device_card)
         dcl.setContentsMargins(14, 12, 14, 12)
         self.detected_title = QLabel()
@@ -138,8 +155,10 @@ class CaseSetupDialog(QDialog):
         self.detected_lbl.setStyleSheet(f"color:{theme.TEXT};font-size:13px;")
         dcl.addWidget(self.detected_title)
         dcl.addWidget(self.detected_lbl)
-        lay.addWidget(self.device_card)
-        lay.addStretch(1)
+        side.addWidget(self.device_card)
+        side.addStretch(1)
+        body.addLayout(side, 1)
+        lay.addLayout(body, 1)
 
         nav = QHBoxLayout()
         self.back_btn = PushButton()
@@ -166,8 +185,10 @@ class CaseSetupDialog(QDialog):
         self._retranslate()
 
     def _detect(self):
-        from .. import ios_acquire
+        """Auto-detect a connected device (iPhone or Android) — no manual pick."""
+        # 1) iPhone via Apple's backup protocol
         try:
+            from .. import ios_acquire
             devices = ios_acquire.list_devices()
         except Exception:
             devices = []
@@ -175,6 +196,7 @@ class CaseSetupDialog(QDialog):
             info = ios_acquire.device_info(devices[0])
             self.source = ("acquire", devices[0])
             self.device_info = {
+                "platform": "iPhone (iOS)",
                 "name": info.get("DeviceName"),
                 "model": info.get("ProductType"),
                 "os": info.get("ProductVersion"),
@@ -182,8 +204,28 @@ class CaseSetupDialog(QDialog):
                 "serial": info.get("SerialNumber") or devices[0],
             }
             self._show_device()
-        else:
-            self.detected_lbl.setText(tr("no_device_found"))
+            return
+        # 2) Android via ADB
+        try:
+            from ..android import adb
+            if adb.adb_available():
+                ad = adb.list_devices()
+                if ad:
+                    info = adb.device_info(ad[0])
+                    self.source = ("adb", ad[0])
+                    self.device_info = {
+                        "platform": "Android",
+                        "name": info.get("model"),
+                        "model": f"{info.get('manufacturer','')} "
+                                 f"{info.get('model','')}".strip(),
+                        "os": f"Android {info.get('android_version','')}".strip(),
+                        "serial": info.get("serial") or ad[0],
+                    }
+                    self._show_device()
+                    return
+        except Exception:
+            pass
+        self.detected_lbl.setText(tr("no_device_found"))
 
     def _open_source(self):
         path = QFileDialog.getExistingDirectory(self, tr("open_source"))
@@ -200,13 +242,15 @@ class CaseSetupDialog(QDialog):
             if plat == "ios":
                 from ..backup import IOSBackup
                 d = IOSBackup(path).device
-                return {"name": d.device_name, "model": d.product_type,
+                return {"platform": "iPhone (iOS)",
+                        "name": d.device_name, "model": d.product_type,
                         "os": f"iOS {d.product_version or ''}".strip(),
                         "imei": d.imei, "serial": d.serial_number}
             if plat == "android":
                 from ..android.extraction import AndroidExtraction
                 d = AndroidExtraction(path).device
-                return {"name": d.model, "model": d.model,
+                return {"platform": "Android",
+                        "name": d.model, "model": d.model,
                         "os": f"Android {d.android_version or ''}".strip(),
                         "imei": None, "serial": d.serial}
         except Exception:
@@ -216,6 +260,8 @@ class CaseSetupDialog(QDialog):
     def _show_device(self):
         d = self.device_info
         lines = []
+        if d.get("platform"):
+            lines.append(f"النوع: {d['platform']}")
         for key, label in (("name", tr("f_name")), ("model", tr("f_model")),
                            ("os", tr("f_os")), ("imei", "IMEI"),
                            ("serial", tr("f_serial"))):
