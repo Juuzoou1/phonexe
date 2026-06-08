@@ -660,6 +660,7 @@ class MainWindow(QWidget):
         self.search_box.setVisible(False)
         self.note_lbl.setVisible(False)
         self.content_stack.setCurrentIndex(5)
+        self._animate_content()
 
     def _nav_panel(self, title: str) -> QVBoxLayout:
         panel = QFrame()
@@ -748,6 +749,15 @@ class MainWindow(QWidget):
         self._refresh_section_icons()
         self.section_title_lbl.setText(tr(key))
         self.refresh_views()
+        self._animate_content()
+
+    def _animate_content(self):
+        """Fade the active content page in for a bit of real motion."""
+        try:
+            from .anim import fade_in
+            fade_in(self.content_stack.currentWidget())
+        except Exception:
+            pass
 
     # ------------------------------------------------------------ loading
     def open_dir(self, _platform_hint: str):
@@ -1129,6 +1139,11 @@ class MainWindow(QWidget):
         self.section_title_lbl.setVisible(True)
         self.section_title_lbl.setText(theme_for(app_key).name)
         self.content_stack.setCurrentIndex(4)
+        try:
+            from .anim import slide_fade_in
+            slide_fade_in(view)
+        except Exception:
+            pass
 
     def _set_chat_size(self, mode: str):
         self._chat_size_mode = mode
