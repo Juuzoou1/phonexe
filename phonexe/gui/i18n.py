@@ -59,6 +59,32 @@ _STRINGS: dict[str, dict[str, str]] = {
     "export_pdf": {"ar": "تصدير PDF", "en": "Export PDF"},
     "export_html": {"ar": "تصدير HTML", "en": "Export HTML"},
     "export_json": {"ar": "تصدير JSON", "en": "Export JSON"},
+    # ---- startup / case setup wizard ----
+    "welcome_title": {"ar": "بدء فحص جنائي جديد", "en": "New Forensic Examination"},
+    "welcome_sub": {"ar": "أدخل بيانات المحقق والقضية للبدء",
+                    "en": "Enter examiner and case details to begin"},
+    "f_examiner": {"ar": "اسم المحقق", "en": "Examiner Name"},
+    "f_case": {"ar": "رقم القضية", "en": "Case Number"},
+    "f_org": {"ar": "الجهة / القسم", "en": "Organization / Unit"},
+    "next": {"ar": "التالي", "en": "Next"},
+    "back": {"ar": "رجوع", "en": "Back"},
+    "connect_title": {"ar": "توصيل الجهاز", "en": "Connect the Device"},
+    "connect_steps": {
+        "ar": "1) فعّل وضع الطيران على الجهاز (عزل عن الشبكة).\n"
+              "2) افتح قفل الجهاز.\n"
+              "3) وصّله بالكمبيوتر عبر USB ووافق على \"الثقة بهذا الكمبيوتر\".\n"
+              "4) اضغط \"كشف الجهاز\".",
+        "en": "1) Enable airplane mode (network isolation).\n"
+              "2) Unlock the device.\n"
+              "3) Connect via USB and tap \"Trust This Computer\".\n"
+              "4) Press \"Detect Device\".",
+    },
+    "detect_device": {"ar": "كشف الجهاز", "en": "Detect Device"},
+    "open_source": {"ar": "أو افتح نسخة/استخراج", "en": "Or open backup/extraction"},
+    "no_device_found": {"ar": "لا يوجد جهاز متصل — استخدم \"فتح نسخة/استخراج\".",
+                        "en": "No device connected — use \"open backup\"."},
+    "start_exam": {"ar": "ابدأ الفحص", "en": "Start Examination"},
+    "detected_device": {"ar": "الجهاز المكتشف", "en": "Detected Device"},
     # ---- stats ----
     "stats_title": {"ar": "نظرة عامة على البيانات المستخرجة", "en": "Extracted Data Overview"},
     "refresh": {"ar": "تحديث البيانات", "en": "Refresh"},

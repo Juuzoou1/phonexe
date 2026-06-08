@@ -104,21 +104,53 @@ class AnalyzeWorker(QThread):
             self.failed.emit(str(e))
 
 
+class AcquireWorker(QThread):
+    """Pull a backup straight from a connected iPhone, then analyze it."""
+    progress = pyqtSignal(str)
+    done = pyqtSignal(dict)
+    failed = pyqtSignal(str)
+
+    def __init__(self, serial: str):
+        super().__init__()
+        self._serial = serial
+
+    def run(self):
+        try:
+            import tempfile
+            from .. import ios_acquire
+            dest = tempfile.mkdtemp(prefix="phonexe_acq_")
+            self.progress.emit("acquiring backup…")
+            backup_dir = ios_acquire.acquire(dest, self._serial,
+                                             progress=self.progress.emit)
+            report = analyze.analyze(str(backup_dir),
+                                     progress=self.progress.emit)
+            self.done.emit(report)
+        except Exception as e:
+            self.failed.emit(str(e))
+
+
 class MainWindow(QWidget):
-    def __init__(self):
+    def __init__(self, examiner: str | None = None, case_id: str | None = None,
+                 organization: str | None = None):
         super().__init__()
         self.setObjectName("root")
         self.report: dict | None = None
+        self.examiner = examiner
+        self.case_id = case_id
+        self.organization = organization
         self.current_section = "sec_overview"
         self._chat_return = "sec_apps"
         self._chat_size_mode = "full"
         self.bookmarks: list[dict] = []
         self._current_cols: list[str] = []
         self._search_results: list[dict] = []
-        self.audit = AuditLog()
+        self.audit = AuditLog(examiner)
+        if case_id:
+            self.audit.record("case_opened", case_id)
         self.devices: list[dict] = []   # multi-device case: {label, report}
         self._switching = False
         self._worker: AnalyzeWorker | None = None
+        self._acq_worker = None
 
         self.setWindowTitle("phonexe")
         self.resize(1360, 860)
@@ -699,6 +731,23 @@ class MainWindow(QWidget):
         self._worker.failed.connect(self._on_failed)
         self._worker.start()
 
+    def start_source(self, source: tuple[str, str] | None):
+        """Begin the examination from the wizard's chosen source."""
+        if not source:
+            return
+        kind, value = source
+        if kind == "path":
+            self.load_path(value)
+        elif kind == "acquire":
+            self.add_event(tr("loading"))
+            self.donut.set_percent(5)
+            self.audit.record("acquisition_started", value)
+            self._acq_worker = AcquireWorker(value)
+            self._acq_worker.progress.connect(self._on_progress)
+            self._acq_worker.done.connect(self._on_done)
+            self._acq_worker.failed.connect(self._on_failed)
+            self._acq_worker.start()
+
     def _on_progress(self, name: str):
         self.add_event(name)
         cur = min(95, self.donut._percent + 12)
@@ -711,6 +760,11 @@ class MainWindow(QWidget):
 
     def _add_device(self, report: dict):
         from .datasource import device_summary
+        # stamp the examination metadata onto the report
+        meta = report.setdefault("meta", {})
+        meta["examiner"] = self.examiner
+        meta["case_id"] = self.case_id
+        meta["organization"] = self.organization
         label = device_summary(report).get("name") or f"Device {len(self.devices)+1}"
         self.devices.append({"label": label, "report": report})
         src = (report.get("meta", {}) or {}).get("source_path", "")

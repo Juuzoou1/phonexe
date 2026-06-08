@@ -23,8 +23,19 @@ def run(argv: list[str] | None = None) -> int:
     except Exception:
         pass
     app.setStyleSheet(theme.stylesheet())
-    window = MainWindow()
+
+    # case-setup wizard first: examiner + case number, then connect/open
+    from PyQt6.QtWidgets import QDialog
+    from .startup import CaseSetupDialog
+    wizard = CaseSetupDialog()
+    if wizard.exec() != QDialog.DialogCode.Accepted:
+        return 0
+    data = wizard.result_data()
+
+    window = MainWindow(examiner=data["examiner"], case_id=data["case_id"],
+                        organization=data["organization"])
     window.show()
+    window.start_source(data["source"])
     return app.exec()
 
 

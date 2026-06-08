@@ -259,3 +259,26 @@ def test_media_kind():
 def test_installed_section(ios_report):
     cols, rows, _ = section_table(ios_report, "sec_installed")
     assert "bundle_id" in cols and len(rows) == 8
+
+
+def test_case_setup_wizard(tmp_path):
+    pytest.importorskip("PyQt6.QtWidgets")
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    try:
+        from PyQt6.QtWidgets import QApplication
+        from phonexe.gui.startup import CaseSetupDialog
+    except Exception:
+        pytest.skip("Qt unavailable")
+    app = QApplication.instance() or QApplication([])
+    build_ios(tmp_path / "backup")
+    d = CaseSetupDialog()
+    d.examiner_edit.setText("Examiner X")
+    d.case_edit.setText("CASE-1")
+    # open an existing backup as the source and read device info
+    d.source = ("path", str(tmp_path / "backup"))
+    d.device_info = d._read_device_info(str(tmp_path / "backup"))
+    res = d.result_data()
+    assert res["examiner"] == "Examiner X" and res["case_id"] == "CASE-1"
+    assert res["device_info"]["name"] == "Suspect iPhone"
+    assert "350000000000001" == res["device_info"]["imei"]
+    app.processEvents()
