@@ -29,14 +29,26 @@ class ADBError(Exception):
     pass
 
 
+def _adb_path() -> Optional[str]:
+    """Locate adb: bundled in gui/assets/tools first, then system PATH."""
+    from pathlib import Path
+    tools = Path(__file__).resolve().parent.parent / "gui" / "assets" / "tools"
+    for cand in (tools / "adb.exe", tools / "adb"):
+        if cand.exists():
+            return str(cand)
+    return shutil.which("adb")
+
+
 def adb_available() -> bool:
-    return shutil.which("adb") is not None
+    return _adb_path() is not None
 
 
 def _run(args: list[str], serial: Optional[str] = None, timeout: int = 60) -> str:
-    if not adb_available():
-        raise ADBError("`adb` not found on PATH. Install Android platform-tools.")
-    cmd = ["adb"]
+    adb = _adb_path()
+    if not adb:
+        raise ADBError("`adb` not found. Install Android platform-tools "
+                       "or bundle adb.exe in gui/assets/tools.")
+    cmd = [adb]
     if serial:
         cmd += ["-s", serial]
     cmd += args
