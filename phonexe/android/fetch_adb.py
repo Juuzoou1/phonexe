@@ -51,8 +51,10 @@ def adb_name(key: str | None = None) -> str:
 
 
 def is_present(dest: Path | None = None) -> bool:
+    # adb is "present" if either the unix or the Windows binary was fetched,
+    # independent of the current host OS (e.g. a Windows build prepared on Linux).
     dest = dest or tools_dir()
-    return (dest / adb_name()).exists()
+    return (dest / "adb").exists() or (dest / "adb.exe").exists()
 
 
 def extract_from_zip(data: bytes, dest: Path, key: str | None = None) -> list[Path]:
