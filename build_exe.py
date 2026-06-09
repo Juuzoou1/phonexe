@@ -29,6 +29,17 @@ def main() -> int:
         print("PyInstaller is not installed. Run: pip install pyinstaller")
         return 1
 
+    # Best-effort: bundle Google's adb so Android acquisition works out of the
+    # box in the packaged EXE. Falls back gracefully if offline.
+    try:
+        from phonexe.android import fetch_adb
+        if not fetch_adb.is_present():
+            print("Fetching Android platform-tools (adb) to bundle ...")
+            fetch_adb.fetch()
+    except Exception as e:  # pragma: no cover - network/build-host dependent
+        print(f"note: could not bundle adb ({e}); Android live-extract will "
+              "need adb on PATH at runtime.")
+
     cmd = [
         sys.executable,
         "-m",

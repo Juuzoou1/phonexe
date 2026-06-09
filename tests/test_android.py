@@ -77,6 +77,46 @@ def test_parse_content_rows():
     assert rows[1]["address"] is None
 
 
+def test_parse_content_rows_comma_in_value():
+    # An SMS body containing ", " must not be chopped into extra fields.
+    sample = "Row: 0 _id=1, address=+1, body=hey, are you there, date=1685620800000\n"
+    rows = parse_content_rows(sample)
+    assert len(rows) == 1
+    assert rows[0]["body"] == "hey, are you there"
+    assert rows[0]["date"] == "1685620800000"
+    assert rows[0]["address"] == "+1"
+
+
+def test_fetch_adb_extracts_from_zip(tmp_path):
+    import io
+    import zipfile
+    from phonexe.android import fetch_adb
+
+    # Synthetic platform-tools zip (no network): the wanted Windows files plus
+    # an unrelated file that must be ignored.
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("platform-tools/adb.exe", b"MZ-fake-adb")
+        zf.writestr("platform-tools/AdbWinApi.dll", b"dll1")
+        zf.writestr("platform-tools/AdbWinUsbApi.dll", b"dll2")
+        zf.writestr("platform-tools/NOTICE.txt", b"license")
+
+    written = fetch_adb.extract_from_zip(buf.getvalue(), tmp_path, key="windows")
+    names = {p.name for p in written}
+    assert names == {"adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll"}
+    assert (tmp_path / "adb.exe").read_bytes() == b"MZ-fake-adb"
+    assert not (tmp_path / "NOTICE.txt").exists()
+    assert fetch_adb.is_present(tmp_path) is True
+
+    # Linux variant keeps only the bare `adb` binary and marks it executable.
+    buf2 = io.BytesIO()
+    with zipfile.ZipFile(buf2, "w") as zf:
+        zf.writestr("platform-tools/adb", b"\x7fELF-fake")
+    written2 = fetch_adb.extract_from_zip(buf2.getvalue(), tmp_path / "lx",
+                                          key="linux")
+    assert {p.name for p in written2} == {"adb"}
+
+
 def test_cli_end_to_end(tmp_path):
     build(tmp_path / "android")
     out_dir = tmp_path / "report"

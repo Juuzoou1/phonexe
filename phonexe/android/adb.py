@@ -23,6 +23,10 @@ from typing import Optional
 from ..timeutil import unix_to_iso
 
 _ROW_RE = re.compile(r"^Row:\s*\d+\s*(.*)$")
+# Split fields on ", " only when the next token looks like "column=", so a
+# value that itself contains ", " (e.g. an SMS body) is kept intact instead of
+# being chopped at every comma.
+_FIELD_SPLIT = re.compile(r",\s+(?=\w+=)")
 
 
 class ADBError(Exception):
@@ -104,7 +108,7 @@ def parse_content_rows(output: str) -> list[dict]:
             continue
         body = m.group(1)
         rec: dict[str, Optional[str]] = {}
-        for pair in body.split(", "):
+        for pair in _FIELD_SPLIT.split(body):
             if "=" not in pair:
                 continue
             k, _, v = pair.partition("=")

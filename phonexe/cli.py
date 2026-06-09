@@ -226,13 +226,37 @@ def _cmd_android(args) -> int:
     return 0
 
 
+def _cmd_fetch_adb(args) -> int:
+    from .android import fetch_adb
+
+    if fetch_adb.is_present() and not args.force:
+        print(f"[i] adb already bundled at: {fetch_adb.tools_dir()}")
+        return 0
+    print("[*] Downloading Android platform-tools (adb) from Google ...")
+    try:
+        out = fetch_adb.fetch(force=args.force)
+    except Exception as e:
+        print(f"[!] Failed to fetch adb: {e}", file=sys.stderr)
+        return 2
+    print(f"[+] adb ready at: {out}")
+    return 0
+
+
 def _cmd_android_adb(args) -> int:
-    from .android import adb
+    from .android import adb, fetch_adb
 
     if not adb.adb_available():
-        print("[!] `adb` not found on PATH. Install Android platform-tools.",
-              file=sys.stderr)
-        return 2
+        if getattr(args, "fetch", False):
+            print("[*] adb not found — downloading platform-tools ...")
+            try:
+                fetch_adb.fetch()
+            except Exception as e:
+                print(f"[!] Could not download adb: {e}", file=sys.stderr)
+                return 2
+        else:
+            print("[!] `adb` not found. Run `phonexe fetch-adb` to download it "
+                  "automatically, or pass --fetch.", file=sys.stderr)
+            return 2
     try:
         devices = adb.list_devices()
     except adb.ADBError as e:
@@ -384,9 +408,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_adb.add_argument("-s", "--serial", help="target device serial (adb -s)")
     p_adb.add_argument("-o", "--output", help="output directory for reports")
+    p_adb.add_argument("--fetch", action="store_true",
+                       help="auto-download adb if it is not already available")
     p_adb.add_argument("--examiner", help="examiner name (recorded in report)")
     p_adb.add_argument("--case-id", help="case identifier (recorded in report)")
     p_adb.set_defaults(func=_cmd_android_adb)
+
+    # ---- fetch bundled adb (Android platform-tools) ----
+    p_fetch = sub.add_parser(
+        "fetch-adb",
+        help="download Google's adb so Android acquisition works out of the box",
+    )
+    p_fetch.add_argument("--force", action="store_true",
+                         help="re-download even if adb is already present")
+    p_fetch.set_defaults(func=_cmd_fetch_adb)
 
     # ---- iOS direct acquisition ----
     p_acq = sub.add_parser(
