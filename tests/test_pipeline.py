@@ -106,6 +106,8 @@ def test_cli_end_to_end(tmp_path):
     report = json.loads((out_dir / "report.json").read_text(encoding="utf-8"))
     assert report["device"]["device_name"] == "Suspect iPhone"
     assert report["artifacts"]["messages"]["count"] == 2
+    # voicemail is wired into the CLI pipeline too (not just the GUI/API path)
+    assert report["artifacts"]["voicemail"]["count"] == 2
     assert (out_dir / "report.html").exists()
 
 

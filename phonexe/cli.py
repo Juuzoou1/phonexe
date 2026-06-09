@@ -40,6 +40,7 @@ from .extractors import (
     notes,
     photos,
     safari,
+    voicemail,
 )
 from .hashing import hash_tree
 from .reporting import report as reporting
@@ -58,6 +59,7 @@ _CORE_EXTRACTORS = [
     contacts,
     messages,
     calls,
+    voicemail,
     safari,
     bookmarks,
     chrome,
