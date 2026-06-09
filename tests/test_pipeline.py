@@ -122,6 +122,22 @@ def test_ios_acquire_check():
         ios_acquire.list_devices(), list)
 
 
+def test_ios_acquire_backup_cmd_and_dir(tmp_path):
+    pytest.importorskip("pymobiledevice3")
+    from phonexe import ios_acquire
+    # no bundled idevicebackup2 -> the command drives pymobiledevice3 backup2
+    cmd = ios_acquire._backup_cmd(tmp_path, "UDID123")
+    assert {"backup2", "backup", "--full"} <= set(cmd)
+    assert "--udid" in cmd and "UDID123" in cmd
+    assert any("pymobiledevice3" in part for part in cmd)
+    assert str(tmp_path) in cmd
+    # the backup lands under dest/<udid>/ — resolve it back
+    sub = tmp_path / "UDID123"
+    sub.mkdir()
+    (sub / "Manifest.db").write_bytes(b"x")
+    assert ios_acquire._find_backup_dir(tmp_path, "UDID123") == sub
+
+
 def test_calendar_notes_files(backup):
     from phonexe.extractors import calendar, notes, files
     assert calendar.extract(backup)["count"] == 1

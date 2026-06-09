@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 _ASSET_TOOLS = Path(__file__).parent / "gui" / "assets" / "tools"
@@ -101,45 +102,60 @@ def device_info(udid: str | None = None) -> dict:
     return info
 
 
-def acquire(dest: str | Path, udid: str | None = None, progress=None) -> Path:
-    """Back up the device into *dest*; return the backup directory to analyze.
+def _find_backup_dir(dest: Path, udid: str | None) -> Path:
+    """Both backends write the backup under dest/<udid>/; locate that folder."""
+    candidates = []
+    if udid:
+        candidates.append(dest / udid)
+    try:
+        candidates += [c for c in dest.iterdir() if c.is_dir()]
+    except OSError:
+        pass
+    for c in candidates:
+        if (c / "Manifest.db").exists() or (c / "Manifest.plist").exists():
+            return c
+    return dest
 
-    *progress* is an optional callable invoked with each output line.
+
+def _backup_cmd(dest: Path, udid: str | None) -> list[str]:
+    """Build the backup command, preferring bundled libimobiledevice, then
+    pymobiledevice3 (pure-Python). Both speak Apple's own mobilebackup2
+    protocol over USB — no jailbreak, root, or passcode bypass."""
+    li = _tool("idevicebackup2")
+    if li:
+        return [li] + (["-u", udid] if udid else []) + \
+            ["backup", "--full", str(dest)]
+    if has_pymobiledevice3():
+        return [sys.executable, "-m", "pymobiledevice3", "backup2", "backup",
+                "--full"] + (["--udid", udid] if udid else []) + [str(dest)]
+    raise AcquireError(
+        "No acquisition backend found. Run `phonexe fetch-adb` is for Android; "
+        "for iOS install pymobiledevice3 (`pip install pymobiledevice3`) or "
+        "bundle libimobiledevice in gui/assets/tools.")
+
+
+def acquire(dest: str | Path, udid: str | None = None, progress=None) -> Path:
+    """Back up the connected iPhone into *dest*; return the backup directory.
+
+    Drives Apple's mobilebackup2 protocol via libimobiledevice or
+    pymobiledevice3. The device must be unlocked and have trusted this
+    computer. *progress* is an optional callable invoked with each output line.
     """
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
 
-    tool = _tool("idevicebackup2")
-    if tool:
-        cmd = [tool] + (["-u", udid] if udid else []) + \
-            ["backup", "--full", str(dest)]
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, text=True,
-                                encoding="utf-8", errors="replace")
-        assert proc.stdout is not None
-        for line in proc.stdout:
-            if progress:
-                progress(line.rstrip())
-        proc.wait()
-        if proc.returncode != 0:
-            raise AcquireError(
-                "idevicebackup2 failed. Ensure the device is unlocked and has "
-                "tapped 'Trust This Computer'.")
-        # idevicebackup2 writes the backup under dest/<udid>/
-        sub = dest / udid if udid else None
-        if sub and (sub / "Manifest.db").exists():
-            return sub
-        for child in dest.iterdir():
-            if (child / "Manifest.db").exists():
-                return child
-        return dest
-
-    if has_pymobiledevice3():
+    cmd = _backup_cmd(dest, udid)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, text=True,
+                            encoding="utf-8", errors="replace")
+    assert proc.stdout is not None
+    for line in proc.stdout:
+        if progress and line.strip():
+            progress(line.rstrip())
+    proc.wait()
+    if proc.returncode != 0:
         raise AcquireError(
-            "pymobiledevice3 is available. Acquire with:\n"
-            f"  pymobiledevice3 backup2 backup --full \"{dest}\"\n"
-            "then analyze that folder with: phonexe analyze <folder>")
-
-    raise AcquireError(
-        "No acquisition backend found. Bundle libimobiledevice in "
-        "gui/assets/tools, or install pymobiledevice3.")
+            "Backup failed. Make sure the iPhone is unlocked, has tapped "
+            "'Trust This Computer', stays connected throughout, and that the "
+            "iTunes/Finder backup password (encryption) is turned OFF.")
+    return _find_backup_dir(dest, udid)
