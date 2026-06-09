@@ -166,6 +166,14 @@ def test_api_server(backup, tmp_path):
         ov = get("/api/overview")
         assert any(s["key"] == "stat_messages" for s in ov["stats"])
         assert len(get("/api/section?key=sec_messages")["rows"]) == 24
+        assert len(get("/api/section?key=sec_voicemail")["rows"]) == 2
         assert len(get("/api/app?key=whatsapp")["conversations"]) == 6
+        # endpoints consumed by the React frontend
+        assert get("/api/map")["markers"]
+        assert get("/api/timeline")["events"]
+        assert get("/api/links")["links"]
+        assert get("/api/identities")["identities"]
+        assert "keywords" in get("/api/keywords")
+        assert get("/api/search?q=Sara")["hits"]
     finally:
         httpd.shutdown()

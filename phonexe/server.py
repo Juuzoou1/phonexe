@@ -94,6 +94,9 @@ def make_handler(state: _State):
                 return self._send({"markers": ds.location_markers(report)})
             if path == "/api/keywords":
                 return self._send({"keywords": ds.keywords(report)})
+            if path == "/api/search":
+                query = (q.get("q") or [""])[0]
+                return self._send({"hits": ds.global_search(report, query)})
             return self._send({"error": "not_found"}, 404)
 
         def do_POST(self):  # noqa: N802
