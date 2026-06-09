@@ -496,8 +496,12 @@ class MainWindow(QWidget):
         self.search_box = SearchLineEdit()
         self.search_box.setFixedWidth(240)
         self.search_box.textChanged.connect(self._apply_filter)
+        self.csv_btn = PushButton(tr("export_csv"))
+        self.csv_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.csv_btn.clicked.connect(self.export_section_csv)
         chead.addWidget(self.section_title_lbl)
         chead.addStretch(1)
+        chead.addWidget(self.csv_btn)
         chead.addWidget(self.search_box)
         cp.addLayout(chead)
 
@@ -1304,6 +1308,30 @@ class MainWindow(QWidget):
             return
         self.audit.record("report_exported", f"{fmt}: {path}")
         notify(self, tr("reports_title"), str(path), success=True)
+
+    def export_section_csv(self):
+        if not self.report:
+            QMessageBox.information(self, "phonexe", tr("no_data"))
+            return
+        from .datasource import section_csv
+        text = section_csv(self.report, self.current_section)
+        if not text.strip():
+            QMessageBox.information(self, "phonexe", tr("no_data"))
+            return
+        default = f"{self.current_section}.csv"
+        path, _ = QFileDialog.getSaveFileName(
+            self, tr("export_csv"), default, "CSV (*.csv)")
+        if not path:
+            return
+        try:
+            # utf-8-sig so Excel renders Arabic correctly
+            Path(path).write_text(text, encoding="utf-8-sig")
+        except Exception as e:
+            QMessageBox.critical(self, "phonexe", str(e))
+            return
+        self.audit.record("section_csv_exported",
+                          f"{self.current_section}: {path}")
+        notify(self, tr("export_csv"), str(path), success=True)
 
     def save_case(self):
         if not self.report:

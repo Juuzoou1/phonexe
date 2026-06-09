@@ -206,6 +206,19 @@ def test_voicemail_section(ios_report):
     assert len(rows) == 2
 
 
+def test_section_csv(ios_report):
+    from phonexe.gui.datasource import section_csv
+    import csv
+    import io
+    text = section_csv(ios_report, "sec_voicemail")
+    parsed = list(csv.reader(io.StringIO(text)))
+    assert parsed[0] == ["sender", "timestamp", "duration_seconds", "deleted"]
+    assert len(parsed) == 3  # header + two voicemails
+    # contacts section round-trips Arabic safely through the csv writer
+    contacts_csv = section_csv(ios_report, "sec_contacts")
+    assert "Sara" in contacts_csv
+
+
 def test_link_analysis(ios_report):
     from phonexe.gui.datasource import link_analysis
     rows = link_analysis(ios_report)

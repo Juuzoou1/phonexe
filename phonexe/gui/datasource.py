@@ -686,3 +686,18 @@ def section_table(report: dict, section: str
     else:
         cols, rows = [], []
     return cols, rows, note
+
+
+def section_csv(report: dict, section: str) -> str:
+    """Render a section as CSV text (header + rows) for forensic export."""
+    import csv
+    import io
+
+    cols, rows, _ = section_table(report, section)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    if cols:
+        writer.writerow(cols)
+    for r in rows:
+        writer.writerow(r)
+    return buf.getvalue()

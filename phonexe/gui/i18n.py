@@ -64,6 +64,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "export_pdf": {"ar": "تصدير PDF", "en": "Export PDF"},
     "export_html": {"ar": "تصدير HTML", "en": "Export HTML"},
     "export_json": {"ar": "تصدير JSON", "en": "Export JSON"},
+    "export_csv": {"ar": "تصدير CSV", "en": "Export CSV"},
     # ---- startup / case setup wizard ----
     "welcome_title": {"ar": "بدء فحص جنائي جديد", "en": "New Forensic Examination"},
     "welcome_sub": {"ar": "أدخل بيانات المحقق والقضية للبدء",
