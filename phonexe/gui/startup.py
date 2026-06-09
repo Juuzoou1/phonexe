@@ -225,7 +225,24 @@ class CaseSetupDialog(QDialog):
                     return
         except Exception:
             pass
+        # nothing detected — explain clearly what is needed
         self.detected_lbl.setText(tr("no_device_found"))
+        try:
+            from .. import ios_acquire
+            ready = ios_acquire.check().get("ready")
+        except Exception:
+            ready = False
+        from .fluent import notify
+        if not ready:
+            notify(self, tr("detect_device"),
+                   "لم يُعثر على جهاز. ثبّت تطبيق \"Apple Devices\" (تعريف USB) "
+                   "للآيفون، أو استخدم \"فتح مصدر / استخراج\" لتحليل نسخة "
+                   "احتياطية جاهزة.", success=False)
+        else:
+            notify(self, tr("detect_device"),
+                   "لم يُعثر على جهاز متصل. تأكد أن الجهاز مفتوح وموثوق "
+                   "(\"الثقة بهذا الكمبيوتر\")، أو استخدم \"فتح مصدر\".",
+                   success=False)
 
     def _open_source(self):
         path = QFileDialog.getExistingDirectory(self, tr("open_source"))
