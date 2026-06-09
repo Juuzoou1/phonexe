@@ -58,6 +58,7 @@ run against an encrypted backup.
 | contacts      | `AddressBook.sqlitedb`                            |
 | messages      | `sms.db` (SMS / iMessage)                         |
 | calls         | `CallHistory.storedata`                           |
+| voicemail     | `voicemail.db` (sender, date, duration, trashed) |
 | safari_history| Safari `History.db`                              |
 | photos        | Camera Roll media + EXIF/GPS (needs Pillow)      |
 | whatsapp      | `ChatStorage.sqlite`                             |
@@ -89,8 +90,9 @@ python -m phonexe gui
 
 From the GUI you can open an iOS backup, an Android extraction, or a saved
 report; browse each section in searchable tables; watch live extraction
-progress; and export JSON + HTML reports. The built `phonexe.exe` launches
-this GUI when run with no arguments.
+progress; export JSON + HTML reports; and export any single section to CSV
+(UTF-8-SIG, opens cleanly in Excel). The built `phonexe.exe` launches this GUI
+when run with no arguments.
 
 Highlights:
 
@@ -105,6 +107,21 @@ Highlights:
   merged into one chronological stream.
 - **Deleted-data recovery** — best-effort carving of deleted rows from SQLite
   freeblocks and free pages.
+
+## Electron + React desktop (alternative UI)
+
+A modern Electron/React/Tailwind frontend in `desktop/` consumes the engine
+over a local JSON API. It renders the dashboard, app-faithful chat clones, an
+offline geolocation map, timeline, relationship/identity analysis, keyword
+frequencies, global search, and an in-app JSON export.
+
+```bash
+python -m phonexe serve            # start the local engine API (port 8765)
+cd desktop && npm install && npm run dev
+```
+
+The PyQt6 GUI above remains the primary, fully-featured desktop app; this
+frontend is an in-progress alternative built on the same backend.
 
 ## Install & run (from source)
 
@@ -138,11 +155,17 @@ python -m phonexe android      /path/to/extraction -o report --hash
 ### Android — live ADB logical acquisition
 
 For a connected device with USB debugging enabled and **authorized** (the
-on-device prompt accepted by the owner). Requires `adb` on PATH:
+on-device prompt accepted by the owner):
 
 ```bash
+python -m phonexe fetch-adb                          # one-time: download adb
 python -m phonexe android-adb -o report --examiner "Your Name"
 ```
+
+`adb` is found automatically if it is on PATH or bundled in
+`phonexe/gui/assets/tools/`. `phonexe fetch-adb` downloads Google's official
+platform-tools there (Apache 2.0); `android-adb --fetch` does it on demand.
+The packaged `phonexe.exe` ships adb so Android works out of the box.
 
 This pulls contacts, SMS and call log via Android content providers. It does
 not root the device or bypass any lock.

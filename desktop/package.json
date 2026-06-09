@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "phonexe — Electron + React + Tailwind + shadcn/ui frontend over the Python forensic engine",
   "private": true,
+  "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev:vite": "vite",

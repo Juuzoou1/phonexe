@@ -9,11 +9,12 @@ machine. The user speaks Arabic — reply in Arabic.
 **phonexe** is a **digital forensics platform** that analyzes **iOS and
 Android** device data (from a backup / filesystem extraction the examiner is
 authorized to access) and presents it in a polished desktop UI: contacts,
-messages, calls, browser history, photos (EXIF/GPS), calendar, notes, files,
-installed apps, deleted-record recovery, and chat apps (WhatsApp, Instagram,
-Snapchat, Telegram, Discord, Signal, Messenger, TikTok) rendered like the real
-apps. Plus timeline, offline map, link analysis, unified contacts, reports
-(JSON/HTML/PDF), multi-device cases, audit trail, and a case-setup wizard.
+messages, calls, voicemail, browser history, photos (EXIF/GPS), calendar,
+notes, files, installed apps, deleted-record recovery, and chat apps (WhatsApp,
+Instagram, Snapchat, Telegram, Discord, Signal, Messenger, TikTok) rendered
+like the real apps. Plus timeline, offline map, link analysis, unified
+contacts, reports (JSON/HTML/PDF + per-section CSV), multi-device cases, audit
+trail, and a case-setup wizard.
 
 ## ⚖️ Ethical scope — hard boundaries (do NOT cross)
 
@@ -41,8 +42,14 @@ authorized-use scope.
     (4-level color tokens), `startup.py` (license + case-setup + neon scan
     page), `widgets.py`, `fluent.py` (PyQt-Fluent-Widgets layer), `anim.py`.
   - Run: `python -m phonexe gui`
-- **Electron + React + Tailwind + shadcn frontend** (new, scaffold): `desktop/`
-  - Consumes the Python API. Run: `cd desktop && npm install && npm run dev`.
+- **Electron + React + Tailwind + shadcn frontend** (functional): `desktop/`
+  - Consumes the Python API (`phonexe serve`). Run: `cd desktop && npm install
+    && npm run dev`. Views: dashboard, app-faithful ChatView, offline MapView,
+    Timeline/Links/Identities/Keywords, global search, JSON export.
+  - Verify without Electron: `npm run lint` (tsc) + `npm run build` (vite). In
+    a shell that can't spawn the npm cmd shim, call the bins via node directly:
+    `node node_modules/typescript/bin/tsc --noEmit`,
+    `node node_modules/vite/bin/vite.js build`.
 
 ## Design system
 
@@ -85,11 +92,17 @@ Generate the synthetic sample backup used by tests/screenshots:
 
 ## Pending / ideas (not required)
 
-- Finish the React frontend (app-faithful chat clones, map, timeline, reports).
-- Bundle `adb.exe` in `phonexe/gui/assets/tools/` so Android works out of the
-  box (license caveat — ask the user first).
-- Live iOS acquisition reliability (Apple USB driver needed on the host).
-- Code-sign the Windows EXE/installer.
+- React frontend: main views are done (chat clones, map, timeline, links,
+  identities, keywords, reports, search). Still nice-to-have: real per-app
+  styling parity with the PyQt clones, media serving over the API.
+- ~~Bundle adb.exe~~ — done: `phonexe fetch-adb` downloads Google's
+  platform-tools into `gui/assets/tools/` (Apache 2.0, git-ignored);
+  `build_exe.py` bundles it into the EXE.
+- **Hard-constrained (need external resources, can't be done from code alone):**
+  - Live iOS acquisition reliability — needs a physical iPhone + Apple USB
+    driver on the host; the always-works path stays "open an existing backup".
+  - Code-sign the Windows EXE/installer — needs a real Authenticode code-signing
+    certificate; CI is wired to publish unsigned artifacts until one is added.
 
 ## Quick reality notes
 
