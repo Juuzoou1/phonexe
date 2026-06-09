@@ -1,0 +1,98 @@
+# CLAUDE.md — phonexe project context
+
+This file is read automatically by Claude Code. It tells you (the assistant)
+everything about this project so you can continue the work on the user's
+machine. The user speaks Arabic — reply in Arabic.
+
+## What this project is
+
+**phonexe** is a **digital forensics platform** that analyzes **iOS and
+Android** device data (from a backup / filesystem extraction the examiner is
+authorized to access) and presents it in a polished desktop UI: contacts,
+messages, calls, browser history, photos (EXIF/GPS), calendar, notes, files,
+installed apps, deleted-record recovery, and chat apps (WhatsApp, Instagram,
+Snapchat, Telegram, Discord, Signal, Messenger, TikTok) rendered like the real
+apps. Plus timeline, offline map, link analysis, unified contacts, reports
+(JSON/HTML/PDF), multi-device cases, audit trail, and a case-setup wizard.
+
+## ⚖️ Ethical scope — hard boundaries (do NOT cross)
+
+phonexe analyzes **local artifacts from a lawfully acquired backup/extraction**
+only. It must **never**:
+- bypass or brute-force passcodes / lock screens,
+- defeat encryption, exploit vulnerabilities, or FRP-bypass,
+- pull from cloud accounts with stolen credentials.
+
+Encrypted backups are refused by design. Keep all new features within this
+authorized-use scope.
+
+## Architecture
+
+- **Python engine** (the core, do not rewrite in JS): `phonexe/`
+  - `analyze.py` — auto-detects platform, runs extractors, returns a report dict.
+  - `extractors/` (iOS) and `android/` — per-artifact parsers (SQLite/plist).
+  - `apps/`, `forensics/sqlite_recover.py` (deleted carving), `backup.py`,
+    `timeutil.py`, `hashing.py`, `audit.py`, `ios_acquire.py`.
+  - `reporting/` — JSON/HTML/PDF reports.
+  - `server.py` + `phonexe serve` — local JSON API for the React frontend.
+- **PyQt6 desktop GUI** (current, working): `phonexe/gui/`
+  - `mainwindow.py`, `dashboard.py`, `chatview.py`, `instaview.py`,
+    `mapview.py`, `datasource.py` (Qt-free data adapter), `theme.py`
+    (4-level color tokens), `startup.py` (license + case-setup + neon scan
+    page), `widgets.py`, `fluent.py` (PyQt-Fluent-Widgets layer), `anim.py`.
+  - Run: `python -m phonexe gui`
+- **Electron + React + Tailwind + shadcn frontend** (new, scaffold): `desktop/`
+  - Consumes the Python API. Run: `cd desktop && npm install && npm run dev`.
+
+## Design system
+
+4-level elevation: `level0 #050B12`, `level1 #08121D`, `level2 #0D1724`,
+`level3 #112132`; border `#14304A`; accent `#4FE3E0`; secondary `#24A8FF`.
+Font: IBM Plex Sans Arabic (bundled). Icons: Lucide + Simple Icons (SVG, in
+`phonexe/gui/assets/`). Cards: 12px radius, 1px border, subtle cyan glow.
+
+## How to run / test / build
+
+```bash
+pip install -r requirements.txt        # Pillow, PyQt6, PyQt6-Fluent-Widgets, ...
+python -m phonexe gui                   # the desktop GUI
+python -m phonexe analyze <backup_dir>  # CLI analysis -> JSON/HTML report
+python -m phonexe serve                 # JSON API for the React frontend
+QT_QPA_PLATFORM=offscreen python -m pytest -q   # tests (keep them green!)
+python build_exe.py                     # build phonexe.exe (PyInstaller, on Windows)
+```
+
+Generate the synthetic sample backup used by tests/screenshots:
+`python tests/make_sample_backup.py sample/backup`
+
+## Secrets / packaging
+
+- **Install code** (Inno Setup installer) and **activation code** (in-app gate):
+  both are `2002`. See `phonexe/gui/license.py` and `installer/phonexe.iss`.
+- CI (`.github/workflows/build.yml`) builds `phonexe.exe` + `phonexe-setup.exe`
+  on Windows and publishes a GitHub **Release** (tag `v0.1.0`) on tag push or
+  manual `workflow_dispatch`.
+
+## Conventions
+
+- Work on branch **`claude/nifty-bardeen-Hi7vj`**. Commit + push when a unit of
+  work is complete.
+- **Tests must stay green** before committing. Add tests for new logic.
+- Keep `phonexe/gui/datasource.py` Qt-free (the API server imports it).
+- Headless Qt: run with `QT_QPA_PLATFORM=offscreen`; animations are skipped
+  when widgets are not visible (don't reintroduce headless crashes).
+- Match the comment density / style of surrounding code.
+
+## Pending / ideas (not required)
+
+- Finish the React frontend (app-faithful chat clones, map, timeline, reports).
+- Bundle `adb.exe` in `phonexe/gui/assets/tools/` so Android works out of the
+  box (license caveat — ask the user first).
+- Live iOS acquisition reliability (Apple USB driver needed on the host).
+- Code-sign the Windows EXE/installer.
+
+## Quick reality notes
+
+- Live USB device detection needs host drivers (Apple "Apple Devices" for
+  iPhone; ADB/platform-tools for Android). The always-works path is **"Open
+  source / extraction"** on an existing backup folder.
