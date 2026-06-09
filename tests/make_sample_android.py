@@ -105,7 +105,8 @@ def build(root: str | Path) -> Path:
         "ro.product.brand=samsung\n"
         "ro.build.version.release=13\n"
         "ro.build.version.sdk=33\n"
-        "ro.serialno=R5SAMPLE123\n"
+        "ro.serialno=R5SAMPLE123\n",
+        encoding="utf-8",
     )
     return root
 

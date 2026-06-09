@@ -135,7 +135,10 @@ class IOSBackup:
         if clauses:
             query += " WHERE " + " AND ".join(clauses)
 
-        with sqlite3.connect(f"file:{self.manifest_db}?mode=ro", uri=True) as con:
+        # as_uri() percent-encodes '#'/'%' in the path (legal on Windows) so
+        # SQLite opens the real Manifest.db instead of an empty anonymous DB.
+        uri = f"{self.manifest_db.resolve().as_uri()}?mode=ro"
+        with sqlite3.connect(uri, uri=True) as con:
             for row in con.execute(query, params):
                 yield BackupFile(
                     file_id=row[0],

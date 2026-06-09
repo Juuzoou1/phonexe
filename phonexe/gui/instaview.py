@@ -7,6 +7,7 @@ artifacts (cached/shared images, senders, message text).
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 from PyQt6.QtCore import QRectF, QSize, Qt, pyqtSignal
@@ -232,8 +233,8 @@ class InstagramView(QWidget):
         likes.setContentsMargins(12, 0, 12, 0)
         v.addWidget(likes)
         if post.get("caption"):
-            cap = QLabel(f"<b>{post.get('username','')}</b>  "
-                         f"{post['caption']}")
+            cap = QLabel(f"<b>{html.escape(post.get('username',''))}</b>  "
+                         f"{html.escape(str(post['caption']))}")
             cap.setWordWrap(True)
             cap.setStyleSheet(f"color:{IG_TEXT};font-size:12px;")
             cap.setContentsMargins(12, 0, 12, 0)

@@ -16,7 +16,10 @@ from typing import Iterator, Optional
 @contextmanager
 def open_ro(db_path: str | Path) -> Iterator[sqlite3.Connection]:
     """Open a SQLite database read-only (never mutates the evidence)."""
-    con = sqlite3.connect(f"file:{Path(db_path)}?mode=ro", uri=True)
+    # Build the file: URI via Path.as_uri() so paths containing '#' or '%'
+    # (legal on Windows) are percent-encoded; raw interpolation would let
+    # SQLite mis-parse them and silently open an empty database.
+    con = sqlite3.connect(f"{Path(db_path).resolve().as_uri()}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     try:
         yield con

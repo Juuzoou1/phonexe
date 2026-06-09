@@ -35,7 +35,8 @@ def _load_land() -> list[list[list[float]]]:
         else:  # pragma: no cover
             from pathlib import Path
 
-            data = (Path(__file__).parent / "assets" / "world_land.json").read_text()
+            data = (Path(__file__).parent / "assets" / "world_land.json").read_text(
+                encoding="utf-8")
         return json.loads(data).get("polygons", [])
     except Exception:
         return []

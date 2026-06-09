@@ -72,8 +72,11 @@ def list_devices() -> list[str]:
             pass
     if has_pymobiledevice3():
         try:
+            import asyncio
+
+            # pymobiledevice3 >= 2.30 makes usbmux.list_devices a coroutine.
             from pymobiledevice3.usbmux import list_devices as _ld
-            return [d.serial for d in _ld()]
+            return [d.serial for d in asyncio.run(_ld())]
         except Exception:
             pass
     return []
@@ -87,6 +90,7 @@ def device_info(udid: str | None = None) -> dict:
         args = [tool] + (["-u", udid] if udid else [])
         try:
             out = subprocess.run(args, capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace",
                                  timeout=20).stdout
             for line in out.splitlines():
                 if ": " in line:
@@ -110,7 +114,8 @@ def acquire(dest: str | Path, udid: str | None = None, progress=None) -> Path:
         cmd = [tool] + (["-u", udid] if udid else []) + \
             ["backup", "--full", str(dest)]
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, text=True)
+                                stderr=subprocess.STDOUT, text=True,
+                                encoding="utf-8", errors="replace")
         assert proc.stdout is not None
         for line in proc.stdout:
             if progress:

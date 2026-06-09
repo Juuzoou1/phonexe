@@ -67,7 +67,7 @@ class AndroidExtraction:
             if candidates:
                 try:
                     return _parse_build_prop(
-                        candidates[0].read_text(errors="replace")
+                        candidates[0].read_text(encoding="utf-8", errors="replace")
                     )
                 except Exception:
                     pass

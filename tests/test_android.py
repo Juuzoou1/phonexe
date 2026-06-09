@@ -82,7 +82,7 @@ def test_cli_end_to_end(tmp_path):
     out_dir = tmp_path / "report"
     rc = main(["android", str(tmp_path / "android"), "-o", str(out_dir)])
     assert rc == 0
-    report = json.loads((out_dir / "report.json").read_text())
+    report = json.loads((out_dir / "report.json").read_text(encoding="utf-8"))
     assert report["meta"]["platform"] == "android"
     assert report["artifacts"]["messages"]["count"] == 2
     assert (out_dir / "report.html").exists()

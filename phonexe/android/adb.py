@@ -53,7 +53,8 @@ def _run(args: list[str], serial: Optional[str] = None, timeout: int = 60) -> st
         cmd += ["-s", serial]
     cmd += args
     proc = subprocess.run(
-        cmd, capture_output=True, text=True, timeout=timeout
+        cmd, capture_output=True, text=True, encoding="utf-8",
+        errors="replace", timeout=timeout
     )
     if proc.returncode != 0:
         raise ADBError(proc.stderr.strip() or f"adb {' '.join(args)} failed")
