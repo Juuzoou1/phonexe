@@ -37,11 +37,12 @@ from .extractors import (
     notes,
     photos,
     safari,
+    voicemail,
 )
 
-_IOS_EXTRACTORS = [contacts, messages, calls, safari, bookmarks, chrome,
-                   whatsapp, social, photos, calendar, notes, installed,
-                   files, deleted]
+_IOS_EXTRACTORS = [contacts, messages, calls, voicemail, safari, bookmarks,
+                   chrome, whatsapp, social, photos, calendar, notes,
+                   installed, files, deleted]
 _ANDROID_EXTRACTORS = [a_contacts, a_messages, a_calls, a_chrome, a_whatsapp,
                        a_social, a_calendar, a_installed, a_files, a_deleted]
 

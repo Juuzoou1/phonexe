@@ -483,7 +483,7 @@ def activity_by_source(report: dict) -> list[tuple[str, int]]:
 
 
 _SEARCH_SECTIONS = [
-    "sec_messages", "sec_calls", "sec_contacts", "sec_media",
+    "sec_messages", "sec_calls", "sec_voicemail", "sec_contacts", "sec_media",
     "sec_browser", "sec_calendar", "sec_notes", "sec_files",
     "sec_accounts", "sec_deleted",
 ]
@@ -598,6 +598,8 @@ def section_count(report: dict, section: str) -> int | None:
     if section == "sec_browser":
         return (_count(report, "safari_history") + _count(report, "chrome_history")
                 + _count(report, "safari_bookmarks"))
+    if section == "sec_voicemail":
+        return _count(report, "voicemail")
     if section == "sec_calendar":
         return _count(report, "calendar")
     if section == "sec_notes":
@@ -664,6 +666,10 @@ def section_table(report: dict, section: str
     elif section == "sec_timeline":
         cols, rows = _to_table(timeline(report),
                                ["timestamp", "type", "source", "detail"])
+    elif section == "sec_voicemail":
+        cols, rows = _to_table(_records(report, "voicemail"),
+                               ["sender", "timestamp", "duration_seconds",
+                                "deleted"])
     elif section == "sec_calendar":
         cols, rows = _to_table(_records(report, "calendar"),
                                ["title", "start", "end", "location"])

@@ -101,6 +101,22 @@ def _build_sms(con):
     con.execute("DELETE FROM message WHERE ROWID IN (3,4)")
 
 
+def _build_voicemail(con):
+    con.execute(
+        "CREATE TABLE voicemail(ROWID INTEGER PRIMARY KEY, remote_uid, sender, "
+        "callback_num, date, duration, expiration, trashed_date, flags)"
+    )
+    # An active voicemail and a deleted (trashed) one.
+    con.execute(
+        "INSERT INTO voicemail VALUES(1,101,'+966500000001',NULL,?,37,0,0,0)",
+        (1685620800,),
+    )
+    con.execute(
+        "INSERT INTO voicemail VALUES(2,102,'+966500000002',NULL,?,12,0,?,0)",
+        (1685624400, 1685628000),
+    )
+
+
 def _build_calls(con):
     con.execute(
         "CREATE TABLE ZCALLRECORD(Z_PK INTEGER PRIMARY KEY, ZADDRESS, ZDATE, "
@@ -306,6 +322,8 @@ def build(root: str | Path) -> Path:
         ("HomeDomain", "Library/SMS/sms.db", _sqlite_bytes(_build_sms)),
         ("HomeDomain", "Library/CallHistoryDB/CallHistory.storedata",
          _sqlite_bytes(_build_calls)),
+        ("HomeDomain", "Library/Voicemail/voicemail.db",
+         _sqlite_bytes(_build_voicemail)),
         ("HomeDomain", "Library/Calendar/Calendar.sqlitedb",
          _sqlite_bytes(_build_calendar)),
         ("HomeDomain", "Library/Notes/notes.sqlite",

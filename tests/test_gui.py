@@ -200,6 +200,12 @@ def test_new_sections(ios_report):
         assert cols  # has columns
 
 
+def test_voicemail_section(ios_report):
+    cols, rows, _ = section_table(ios_report, "sec_voicemail")
+    assert "sender" in cols and "duration_seconds" in cols
+    assert len(rows) == 2
+
+
 def test_link_analysis(ios_report):
     from phonexe.gui.datasource import link_analysis
     rows = link_analysis(ios_report)

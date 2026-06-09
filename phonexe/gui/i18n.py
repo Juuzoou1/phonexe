@@ -38,6 +38,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "sec_media": {"ar": "وسائط متعددة", "en": "Multimedia"},
     "sec_location": {"ar": "الموقع الجغرافي", "en": "Geolocation"},
     "sec_calls": {"ar": "سجل المكالمات", "en": "Call Log"},
+    "sec_voicemail": {"ar": "البريد الصوتي", "en": "Voicemail"},
     "sec_contacts": {"ar": "جهات الاتصال", "en": "Contacts"},
     "sec_browser": {"ar": "سجل التصفح", "en": "Browsing History"},
     "sec_accounts": {"ar": "الحسابات", "en": "Accounts"},

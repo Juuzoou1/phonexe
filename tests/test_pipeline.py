@@ -58,6 +58,19 @@ def test_whatsapp(backup):
     assert any("media" in r for r in out["records"])
 
 
+def test_voicemail(backup):
+    from phonexe.extractors import voicemail
+    out = voicemail.extract(backup)
+    assert out["count"] == 2
+    first = out["records"][0]
+    assert first["sender"] == "+966500000001"
+    assert first["duration_seconds"] == 37
+    assert first["deleted"] is False
+    assert first["timestamp"].startswith("2023-")
+    # the second voicemail was trashed
+    assert any(r["deleted"] for r in out["records"])
+
+
 def test_social_detects_instagram(backup):
     out = social.extract(backup)
     assert "instagram" in out["apps"]

@@ -69,6 +69,7 @@ _SECTION_GROUPS = [
         ("sec_media", "image"),
         ("sec_location", "map-pin"),
         ("sec_calls", "phone"),
+        ("sec_voicemail", "voicemail"),
         ("sec_contacts", "users"),
         ("sec_browser", "globe"),
         ("sec_calendar", "calendar"),

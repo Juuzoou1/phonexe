@@ -36,8 +36,9 @@ def _overview(report):
             s: ds.section_count(report, s)
             for s in (
                 "sec_apps", "sec_installed", "sec_messages", "sec_media",
-                "sec_location", "sec_calls", "sec_contacts", "sec_browser",
-                "sec_calendar", "sec_notes", "sec_files", "sec_deleted",
+                "sec_location", "sec_calls", "sec_voicemail", "sec_contacts",
+                "sec_browser", "sec_calendar", "sec_notes", "sec_files",
+                "sec_deleted",
             )
         },
         "apps": ds.chat_apps(report),
