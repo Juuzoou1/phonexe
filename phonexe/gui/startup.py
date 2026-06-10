@@ -4,6 +4,10 @@ Case setup / startup wizard.
 Shown before the main window: collects the examiner name and case number,
 then guides connecting the device (or opening an existing backup/extraction)
 and detects the device details that seed the examination's chain of custody.
+
+Styled in an Apple-inspired dark aesthetic: near-black canvas, centered
+content, soft rounded fields, San-Francisco-like typography (IBM Plex Sans
+Arabic) and the Apple system-blue call to action.
 """
 
 from __future__ import annotations
@@ -15,21 +19,75 @@ from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
+    QPushButton,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
-from . import theme
-from .fluent import LineEdit, PrimaryPushButton, PushButton
 from .i18n import tr
+
+# ----------------------------------------------------------------- palette
+# Apple dark-mode system colours.
+_BG = "#000000"
+_CARD = "#1C1C1E"
+_CARD2 = "#2C2C2E"
+_BORDER = "#38383A"
+_TXT = "#F5F5F7"
+_TXT2 = "#86868B"
+_TXT3 = "#AEAEB2"
+_BLUE = "#0A84FF"
+
+_QSS = f"""
+QDialog#caseSetup, QWidget#page {{ background:{_BG}; }}
+QFrame#headerBar {{ background:{_BG}; border-bottom:1px solid #1C1C1E; }}
+
+QLabel {{ color:{_TXT}; background:transparent; }}
+QLabel#wordmark {{ color:{_TXT}; font-size:17px; font-weight:600;
+                   letter-spacing:0.3px; }}
+QLabel#pageTitle {{ color:{_TXT}; font-size:27px; font-weight:600;
+                    letter-spacing:0.2px; }}
+QLabel#pageSub {{ color:{_TXT2}; font-size:14px; }}
+QLabel#fieldLabel {{ color:{_TXT2}; font-size:12px; font-weight:600; }}
+QLabel#stepsLabel {{ color:{_TXT3}; font-size:13px; }}
+QLabel#detTitle {{ color:{_TXT2}; font-size:11px; font-weight:700;
+                   letter-spacing:0.4px; }}
+QLabel#detBody {{ color:{_TXT}; font-size:13px; }}
+
+QLineEdit {{
+    background:{_CARD}; border:1px solid {_BORDER}; border-radius:10px;
+    padding:0 14px; min-height:42px; color:{_TXT}; font-size:15px;
+    selection-background-color:{_BLUE};
+}}
+QLineEdit:focus {{ border:1px solid {_BLUE}; background:#222224; }}
+
+QPushButton#primary {{
+    background:{_BLUE}; color:#FFFFFF; border:none; border-radius:12px;
+    min-height:46px; font-size:16px; font-weight:600;
+}}
+QPushButton#primary:hover {{ background:#3395FF; }}
+QPushButton#primary:pressed {{ background:#0060DF; }}
+QPushButton#primary:disabled {{ background:{_CARD2}; color:#6E6E73; }}
+
+QPushButton#secondary {{
+    background:{_CARD}; color:{_TXT}; border:1px solid {_BORDER};
+    border-radius:12px; min-height:42px; font-size:15px; font-weight:500;
+}}
+QPushButton#secondary:hover {{ background:{_CARD2}; }}
+
+QFrame#deviceCard {{ background:{_CARD}; border:1px solid {_BORDER};
+                     border-radius:14px; }}
+"""
 
 
 class CaseSetupDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("caseSetup")
         self.setWindowTitle("phonexe")
-        self.resize(720, 600)
+        self.resize(760, 640)
+        self.setStyleSheet(_QSS)
         self.source: tuple[str, str] | None = None  # ("path"|"acquire", value)
         self.device_info: dict = {}
 
@@ -38,17 +96,14 @@ class CaseSetupDialog(QDialog):
         outer.setSpacing(0)
 
         header = QFrame()
-        header.setStyleSheet(f"background:{theme.PANEL};")
-        header.setFixedHeight(84)
-        hl = QVBoxLayout(header)
-        hl.setContentsMargins(28, 16, 28, 16)
-        logo = QLabel("\U0001F6E1  phonexe")
-        logo.setStyleSheet(
-            f"color:{theme.ACCENT};font-size:20px;font-weight:700;")
-        self.h_title = QLabel()
-        self.h_title.setStyleSheet(f"color:{theme.TEXT_DIM};font-size:12px;")
+        header.setObjectName("headerBar")
+        header.setFixedHeight(62)
+        hl = QHBoxLayout(header)
+        hl.setContentsMargins(26, 0, 26, 0)
+        logo = QLabel("phonexe")
+        logo.setObjectName("wordmark")
         hl.addWidget(logo)
-        hl.addWidget(self.h_title)
+        hl.addStretch(1)
         outer.addWidget(header)
 
         self.stack = QStackedWidget()
@@ -58,65 +113,85 @@ class CaseSetupDialog(QDialog):
 
         self._retranslate()
 
+    # -------------------------------------------------------- small helpers
+    def _field(self, lbl: QLabel, edit: QLineEdit, col: QVBoxLayout):
+        lbl.setObjectName("fieldLabel")
+        edit.setClearButtonEnabled(False)
+        col.addWidget(lbl)
+        col.addSpacing(6)
+        col.addWidget(edit)
+        col.addSpacing(16)
+
     # ----------------------------------------------------------- page 1
     def _page_case(self) -> QWidget:
         w = QWidget()
-        lay = QVBoxLayout(w)
-        lay.setContentsMargins(40, 30, 40, 30)
-        lay.setSpacing(14)
+        w.setObjectName("page")
+        row = QHBoxLayout(w)
+        row.setContentsMargins(40, 0, 40, 0)
+        row.addStretch(1)
 
+        col = QVBoxLayout()
+        col.setSpacing(0)
+        center = QWidget()
+        center.setObjectName("page")
+        center.setFixedWidth(400)
+        center.setLayout(col)
+
+        col.addStretch(3)
         self.p1_title = QLabel()
-        self.p1_title.setStyleSheet(
-            f"color:{theme.TEXT};font-size:18px;font-weight:700;")
+        self.p1_title.setObjectName("pageTitle")
+        self.p1_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.p1_sub = QLabel()
-        self.p1_sub.setStyleSheet(f"color:{theme.TEXT_DIM};font-size:12px;")
-        lay.addWidget(self.p1_title)
-        lay.addWidget(self.p1_sub)
-        lay.addSpacing(10)
+        self.p1_sub.setObjectName("pageSub")
+        self.p1_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.p1_sub.setWordWrap(True)
+        col.addWidget(self.p1_title)
+        col.addSpacing(8)
+        col.addWidget(self.p1_sub)
+        col.addSpacing(34)
 
         self.examiner_lbl = QLabel()
-        self.examiner_edit = LineEdit()
+        self.examiner_edit = QLineEdit()
         self.case_lbl = QLabel()
-        self.case_edit = LineEdit()
+        self.case_edit = QLineEdit()
         self.org_lbl = QLabel()
-        self.org_edit = LineEdit()
-        for lbl, ed in ((self.examiner_lbl, self.examiner_edit),
-                        (self.case_lbl, self.case_edit),
-                        (self.org_lbl, self.org_edit)):
-            lbl.setStyleSheet(f"color:{theme.TEXT_DIM};font-size:12px;")
-            lay.addWidget(lbl)
-            lay.addWidget(ed)
-        lay.addStretch(1)
+        self.org_edit = QLineEdit()
+        self._field(self.examiner_lbl, self.examiner_edit, col)
+        self._field(self.case_lbl, self.case_edit, col)
+        self._field(self.org_lbl, self.org_edit, col)
 
-        self.next_btn = PrimaryPushButton()
-        self.next_btn.setMinimumHeight(40)
+        col.addSpacing(12)
+        self.next_btn = QPushButton()
+        self.next_btn.setObjectName("primary")
+        self.next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.next_btn.clicked.connect(self._go_connect)
-        lay.addWidget(self.next_btn)
+        col.addWidget(self.next_btn)
+        col.addStretch(4)
+
+        row.addWidget(center)
+        row.addStretch(1)
         return w
 
     # ----------------------------------------------------------- page 2
     def _page_connect(self) -> QWidget:
         from .widgets import NeonPhone
         w = QWidget()
+        w.setObjectName("page")
         lay = QVBoxLayout(w)
-        lay.setContentsMargins(34, 24, 34, 24)
-        lay.setSpacing(16)
+        lay.setContentsMargins(40, 28, 40, 28)
+        lay.setSpacing(18)
 
         self.p2_title = QLabel()
-        self.p2_title.setStyleSheet(
-            f"color:{theme.TEXT};font-size:18px;font-weight:700;")
+        self.p2_title.setObjectName("pageTitle")
         lay.addWidget(self.p2_title)
 
         body = QHBoxLayout()
-        body.setSpacing(20)
+        body.setSpacing(22)
 
-        # big square card with the glowing neon line-art phone
+        # large card with the glowing line-art phone
         square = QFrame()
         square.setObjectName("deviceCard")
         square.setFixedSize(300, 360)
-        square.setStyleSheet(
-            f"#deviceCard{{background:{theme.LEVEL2};border:1px solid "
-            f"{theme.BORDER};border-radius:12px;}}")
         sq = QVBoxLayout(square)
         sq.setContentsMargins(8, 8, 8, 8)
         sq.addWidget(NeonPhone())
@@ -126,33 +201,30 @@ class CaseSetupDialog(QDialog):
         side = QVBoxLayout()
         side.setSpacing(12)
         self.steps_lbl = QLabel()
+        self.steps_lbl.setObjectName("stepsLabel")
         self.steps_lbl.setWordWrap(True)
-        self.steps_lbl.setStyleSheet(
-            f"color:{theme.TEXT_DIM};font-size:13px;line-height:1.7;")
         side.addWidget(self.steps_lbl)
 
-        self.detect_btn = PrimaryPushButton()
-        self.detect_btn.setMinimumHeight(42)
+        self.detect_btn = QPushButton()
+        self.detect_btn.setObjectName("primary")
+        self.detect_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.detect_btn.clicked.connect(self._detect)
-        self.open_btn = PushButton()
-        self.open_btn.setMinimumHeight(38)
+        self.open_btn = QPushButton()
+        self.open_btn.setObjectName("secondary")
+        self.open_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.open_btn.clicked.connect(self._open_source)
         side.addWidget(self.detect_btn)
         side.addWidget(self.open_btn)
 
         self.device_card = QFrame()
         self.device_card.setObjectName("deviceCard")
-        self.device_card.setStyleSheet(
-            f"#deviceCard{{background:{theme.LEVEL2};border:1px solid "
-            f"{theme.BORDER};border-radius:12px;}}")
         dcl = QVBoxLayout(self.device_card)
-        dcl.setContentsMargins(14, 12, 14, 12)
+        dcl.setContentsMargins(16, 14, 16, 14)
         self.detected_title = QLabel()
-        self.detected_title.setStyleSheet(
-            f"color:{theme.TEXT_DIM};font-size:11px;font-weight:600;")
+        self.detected_title.setObjectName("detTitle")
         self.detected_lbl = QLabel("—")
+        self.detected_lbl.setObjectName("detBody")
         self.detected_lbl.setWordWrap(True)
-        self.detected_lbl.setStyleSheet(f"color:{theme.TEXT};font-size:13px;")
         dcl.addWidget(self.detected_title)
         dcl.addWidget(self.detected_lbl)
         side.addWidget(self.device_card)
@@ -161,10 +233,13 @@ class CaseSetupDialog(QDialog):
         lay.addLayout(body, 1)
 
         nav = QHBoxLayout()
-        self.back_btn = PushButton()
+        self.back_btn = QPushButton()
+        self.back_btn.setObjectName("secondary")
+        self.back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.back_btn.clicked.connect(lambda: self.stack.setCurrentIndex(0))
-        self.start_btn = PrimaryPushButton()
-        self.start_btn.setMinimumHeight(40)
+        self.start_btn = QPushButton()
+        self.start_btn.setObjectName("primary")
+        self.start_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.start_btn.setEnabled(False)
         self.start_btn.clicked.connect(self.accept)
         nav.addWidget(self.back_btn)
@@ -289,7 +364,6 @@ class CaseSetupDialog(QDialog):
 
     # ----------------------------------------------------------- i18n
     def _retranslate(self):
-        self.h_title.setText(tr("welcome_sub"))
         self.p1_title.setText(tr("welcome_title"))
         self.p1_sub.setText(tr("welcome_sub"))
         self.examiner_lbl.setText(tr("f_examiner"))
