@@ -60,6 +60,25 @@ def test_social_detects_instagram(ext):
     assert "instagram" in out["apps"]
 
 
+def test_social_detects_additional_apps(ext):
+    # Viber is one of the newly-supported messengers; the sample ships a
+    # Viber database so detection of the expanded app list is exercised.
+    out = social.extract(ext)
+    assert "viber" in out["apps"]
+    assert out["apps"]["viber"]["name"] == "Viber"
+
+
+def test_social_recovers_deleted_messages(ext):
+    out = social.extract(ext)
+    assert out["deleted_count"] >= 1
+    fragments = [
+        frag["text"]
+        for db in out["apps"]["viber"]["databases"]
+        for frag in db["deleted"]
+    ]
+    assert any("docks at midnight" in t for t in fragments)
+
+
 def test_missing_directory():
     with pytest.raises(ExtractionError):
         AndroidExtraction("/no/such/path/here")

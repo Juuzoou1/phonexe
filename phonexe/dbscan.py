@@ -51,3 +51,24 @@ def dump_table(con: sqlite3.Connection, table: str, limit: int = MAX_ROWS) -> li
             rec[k] = v
         out.append(rec)
     return out
+
+
+# Cap carved deleted fragments per app database so a heavily-churned chat DB
+# can't bloat the report.
+MAX_DELETED = 500
+
+
+def deleted_fragments(db_path, limit: int = MAX_DELETED) -> list[dict]:
+    """Carve deleted text fragments from an app's SQLite file.
+
+    Thin wrapper over the forensic carver so both the iOS and Android social
+    collectors recover the same way. Returns [] on any failure (the carver is
+    best-effort and must never abort an examination).
+    """
+    # Imported lazily to avoid a heavy import for callers that never carve.
+    from .forensics.sqlite_recover import recover_deleted
+
+    try:
+        return recover_deleted(db_path)[:limit]
+    except Exception:
+        return []

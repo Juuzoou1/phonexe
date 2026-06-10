@@ -84,6 +84,28 @@ def _build_instagram(con):
     )
 
 
+def _build_viber(con):
+    # Keep deleted bytes on disk so the carver can recover them, mirroring a
+    # real device where secure_delete is usually off.
+    con.execute("PRAGMA secure_delete=OFF")
+    con.execute(
+        "CREATE TABLE messages(_id INTEGER PRIMARY KEY, body, date, "
+        "conversation_id)"
+    )
+    con.execute(
+        "INSERT INTO messages VALUES(1,'viber hello there',?,7)", (_T_MS,)
+    )
+    con.execute(
+        "INSERT INTO messages VALUES(2,"
+        "'DELETED viber meet at the docks at midnight',?,7)",
+        (_T_MS + 60000,),
+    )
+    # Commit so rows hit disk pages, then delete in a second transaction —
+    # leaving the original bytes in freeblocks for the carver to recover.
+    con.commit()
+    con.execute("DELETE FROM messages WHERE _id = 2")
+
+
 def build(root: str | Path) -> Path:
     root = Path(root)
     base = root / "data" / "data"
@@ -95,6 +117,8 @@ def build(root: str | Path) -> Path:
     _db(base / "com.whatsapp" / "databases" / "msgstore.db", _build_whatsapp)
     _db(base / "com.instagram.android" / "databases" / "direct.db",
         _build_instagram)
+    _db(base / "com.viber.voip" / "databases" / "viber_messages.db",
+        _build_viber)
 
     # Minimal build.prop for device info.
     sysdir = root / "system"

@@ -17,7 +17,7 @@ import sqlite3
 from dataclasses import dataclass
 
 from ..backup import IOSBackup
-from ..dbscan import dump_table, message_tables
+from ..dbscan import deleted_fragments, dump_table, message_tables
 from ..sqlite_util import open_ro
 
 ARTIFACT = "social_apps"
@@ -41,6 +41,11 @@ KNOWN_APPS: tuple[AppDef, ...] = (
     AppDef("signal", "Signal", ("org.whispersystems.signal",)),
     AppDef("messenger", "Facebook Messenger", ("com.facebook.Messenger",)),
     AppDef("tiktok", "TikTok", ("com.zhiliaoapp.musically", "com.ss.iphone")),
+    AppDef("viber", "Viber", ("com.viber",)),
+    AppDef("line", "LINE", ("jp.naver.line",)),
+    AppDef("kik", "Kik", ("com.kik.chat",)),
+    AppDef("wechat", "WeChat", ("com.tencent.xin", "com.tencent.mm")),
+    AppDef("threema", "Threema", ("ch.threema",)),
 )
 
 _DB_SUFFIXES = (".sqlite", ".db", ".sqlitedb", ".sql")
@@ -75,6 +80,7 @@ def extract(backup: IOSBackup) -> dict:
             "relative_path": f.relative_path,
             "stored_at": str(payload),
             "tables": [],
+            "deleted": [],
         }
         try:
             with open_ro(payload) as con:
@@ -90,6 +96,8 @@ def extract(backup: IOSBackup) -> dict:
                         )
         except sqlite3.Error:
             db_entry["error"] = "unreadable (locked/corrupt/encrypted)"
+        # Carve deleted message fragments from the freelist / unused page space.
+        db_entry["deleted"] = deleted_fragments(payload)
 
         bucket = found.setdefault(
             app.key, {"name": app.name, "databases": []}
@@ -102,4 +110,10 @@ def extract(backup: IOSBackup) -> dict:
         for db in app["databases"]
         for t in db["tables"]
     )
-    return {"artifact": ARTIFACT, "count": total, "apps": found}
+    deleted_total = sum(
+        len(db.get("deleted", []))
+        for app in found.values()
+        for db in app["databases"]
+    )
+    return {"artifact": ARTIFACT, "count": total,
+            "deleted_count": deleted_total, "apps": found}
