@@ -79,6 +79,21 @@ Generate the synthetic sample backup used by tests/screenshots:
 - CI (`.github/workflows/build.yml`) builds `phonexe.exe` + `phonexe-setup.exe`
   on Windows and publishes a GitHub **Release** (tag `v0.1.0`) on tag push or
   manual `workflow_dispatch`.
+- **App icon**: `phonexe/gui/assets/appicon.ico` (+ `.png`), generated offline by
+  `python -m phonexe.gui.assets.make_icon`. Used by `build_exe.py` (`--icon`),
+  the installer (`SetupIconFile`), and the GUI window. Regenerate if the palette
+  changes.
+
+## Chat apps coverage
+
+- Detected messengers (iOS `apps/social.py` by domain, Android `android/social.py`
+  by package): Instagram, Snapchat, Discord, Telegram, Signal, Messenger, TikTok,
+  Viber, LINE, Kik, WeChat, Threema — plus WhatsApp & native Messages.
+- Each app DB is also run through the freelist carver (`dbscan.deleted_fragments`
+  → `forensics/sqlite_recover`); recovered deleted fragments live under each
+  `databases[].deleted`, with a top-level `deleted_count`.
+- React `ChatView` themes each app with its real dark-mode palette via
+  `desktop/src/lib/appThemes.ts` (kept in sync with `gui/chatview.py` APP_THEMES).
 
 ## Conventions
 
