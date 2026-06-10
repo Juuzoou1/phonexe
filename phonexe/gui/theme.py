@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-# Core palette — 4-level elevation system (exact spec tokens).
-LEVEL0 = "#050B12"      # window background
-LEVEL1 = "#08121D"      # main panels
-LEVEL2 = "#0D1724"      # nested cards / inner surfaces
-LEVEL3 = "#112132"      # inputs / hover / deepest nesting
+# Core palette — 4-level elevation system. Deepened toward black for an
+# Apple-style dark canvas (same navy/cyan hue family — identity colours and
+# the accent are unchanged, the surfaces are just darker and calmer).
+LEVEL0 = "#02070D"      # window background
+LEVEL1 = "#050D17"      # main panels
+LEVEL2 = "#0A1320"      # nested cards / inner surfaces
+LEVEL3 = "#0E1B2A"      # inputs / hover / deepest nesting
 BG = LEVEL0
 PANEL = LEVEL1
 CARD = LEVEL2
 PANEL_ALT = LEVEL2      # alias used across the UI
-BORDER = "#14304A"      # borders
+BORDER = "#102639"      # borders (softer hairline, same hue)
 TEXT = "#F4F8FC"        # text primary
 TEXT_DIM = "#90A6BC"    # text secondary
 ACCENT = "#4FE3E0"      # primary accent (cyan)
@@ -21,8 +23,8 @@ OK = "#21D07A"          # success / connected
 WARN = "#F7B731"        # warning
 DANGER = "#FF5B5B"      # danger / end exam / deleted
 
-# Corner radii (px) from the brief.
-RADIUS_CARD = 12
+# Corner radii (px) — slightly softened for an Apple-style feel.
+RADIUS_CARD = 14
 RADIUS_BTN = 10
 RADIUS_INPUT = 8
 
@@ -94,7 +96,7 @@ QPushButton#navBtn:checked {{
 /* ---- panels / cards (solid, 1px border, 12px radius per spec) ---- */
 QFrame#panel, QFrame#card {{
     background: {PANEL}; border: 1px solid {BORDER};
-    border-radius: 12px;
+    border-radius: {RADIUS_CARD}px;
 }}
 QLabel#panelTitle {{
     font-size: {FS_TITLE}px; font-weight: {W_BOLD}; color: {TEXT};
@@ -140,7 +142,7 @@ QPushButton#danger:hover {{ background: {DANGER}; color: {TEXT}; }}
 
 /* ---- stat cards ---- */
 QFrame#statCard {{
-    background: {LEVEL2}; border: 1px solid {BORDER}; border-radius: 12px;
+    background: {LEVEL2}; border: 1px solid {BORDER}; border-radius: {RADIUS_CARD}px;
 }}
 QFrame#statCard:hover {{ background: {LEVEL3}; border: 1px solid {ACCENT}; }}
 QLabel#statValue {{ font-size: {FS_DISPLAY + 6}px; font-weight: {W_BOLD}; }}
@@ -149,7 +151,7 @@ QLabel#statLabel {{ font-size: {FS_LABEL}px; color: {TEXT_DIM};
 
 /* ---- tables ---- */
 QTableView, QTableWidget {{
-    background: {LEVEL1}; border: 1px solid {BORDER}; border-radius: 12px;
+    background: {LEVEL1}; border: 1px solid {BORDER}; border-radius: {RADIUS_CARD}px;
     gridline-color: {BORDER}; selection-background-color: {ACCENT_DIM};
     selection-color: {TEXT};
 }}
@@ -168,7 +170,7 @@ QLineEdit:focus {{ border-color: {ACCENT}; }}
 
 /* ---- device card ---- */
 QFrame#deviceCard {{
-    background: {LEVEL2}; border: 1px solid {BORDER}; border-radius: 12px;
+    background: {LEVEL2}; border: 1px solid {BORDER}; border-radius: {RADIUS_CARD}px;
 }}
 QLabel#deviceName {{ font-size: {FS_BODY + 1}px; font-weight: {W_BOLD}; }}
 QLabel#deviceMeta {{ font-size: {FS_SMALL}px; color: {TEXT_DIM}; }}
