@@ -20,6 +20,8 @@ OutputBaseFilename=phonexe-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=..\phonexe\gui\assets\appicon.ico
+UninstallDisplayIcon={app}\phonexe.exe
 ; Require a secret code to run the installer (encrypted setup).
 Password=2002
 Encryption=yes

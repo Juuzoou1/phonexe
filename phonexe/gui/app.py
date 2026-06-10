@@ -13,6 +13,15 @@ from .mainwindow import MainWindow
 def run(argv: list[str] | None = None) -> int:
     app = QApplication(argv if argv is not None else sys.argv)
     app.setApplicationName("phonexe")
+    # Window / taskbar icon (committed asset; silently skipped if absent).
+    try:
+        from pathlib import Path
+        from PyQt6.QtGui import QIcon
+        icon = Path(__file__).resolve().parent / "assets" / "appicon.ico"
+        if icon.exists():
+            app.setWindowIcon(QIcon(str(icon)))
+    except Exception:
+        pass
     from .fonts import load_fonts
     load_fonts()
     # Fluent Design theming (used by the qfluentwidgets components)

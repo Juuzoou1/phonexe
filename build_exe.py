@@ -20,6 +20,9 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
+
+_ICON = Path(__file__).resolve().parent / "phonexe" / "gui" / "assets" / "appicon.ico"
 
 
 def main() -> int:
@@ -28,6 +31,15 @@ def main() -> int:
     except ImportError:
         print("PyInstaller is not installed. Run: pip install pyinstaller")
         return 1
+
+    # Regenerate the brand icon if it is missing (committed, so usually present).
+    if not _ICON.exists():
+        try:
+            from phonexe.gui.assets.make_icon import build as build_icon
+            build_icon()
+        except Exception as e:  # pragma: no cover - Pillow/build-host dependent
+            print(f"note: could not generate app icon ({e}); building without "
+                  "a custom icon.")
 
     # Best-effort: bundle Google's adb so Android acquisition works out of the
     # box in the packaged EXE. Falls back gracefully if offline.
@@ -77,6 +89,10 @@ def main() -> int:
     except ImportError:
         print("note: PyQt6-Fluent-Widgets not installed — UI falls back to "
               "plain Qt widgets.")
+
+    # Brand the executable with the phonexe app icon when available.
+    if _ICON.exists():
+        cmd += ["--icon", str(_ICON)]
 
     cmd.append("run.py")
     print("Running:", " ".join(cmd))
