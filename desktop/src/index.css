@@ -102,6 +102,10 @@ body {
 /* scanning sweep line (for 'scanning…' affordances) */
 @keyframes sweep { 0% { transform: translateY(-120%); } 100% { transform: translateY(220%); } }
 
+/* blinking terminal cursor */
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.cursor-blink { animation: blink 1s steps(1) infinite; }
+
 /* honor reduced motion: kill all decorative motion */
 @media (prefers-reduced-motion: reduce) {
   .crt-overlay::after, .glitch.is-glitching { animation: none; }
