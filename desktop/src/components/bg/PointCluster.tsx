@@ -15,48 +15,49 @@ const PALETTE: [number, number, number][] = [
 // Camera-facing instanced quads (NOT gl_PointSize points — those clamp to 1px
 // under software WebGL). Each instance is a small colored box; the cluster
 // drifts and every box flickers independently.
+// NOTE: don't declare attribute position/uv — three's ShaderMaterial injects
+// them. We pass the quad corner (position.xy, range ±0.5) to build a round dot.
 const VERT = /* glsl */ `
 attribute vec3 iOffset;
 attribute vec3 iColor;
 attribute float iSeed;
-attribute vec2 uv;
 uniform float uTime;
 uniform float uSize;
 varying vec3 vColor;
 varying float vSeed;
-varying vec2 vUv;
+varying vec2 vQuad;
 void main() {
   vColor = iColor;
   vSeed = iSeed;
-  vUv = uv;
+  vQuad = position.xy;                  // ±0.5 quad corner -> circle in frag
   // slow, gentle drift (calm)
   vec3 drift = 0.16 * sin(uTime * vec3(0.35, 0.45, 0.3) + iSeed);
   vec4 mv = modelViewMatrix * vec4(iOffset + drift, 1.0);
   float s = uSize * (0.75 + 0.25 * sin(uTime * 0.9 + iSeed));
-  mv.xy += position.xy * s;            // billboard the quad toward the camera
+  mv.xy += position.xy * s;             // billboard the quad toward the camera
   gl_Position = projectionMatrix * mv;
 }
 `;
 
-// Soft ROUND dots (discard outside the unit circle), gentle flicker, low alpha.
+// Soft ROUND dots (discard outside the inscribed circle), gentle flicker.
 const FRAG = /* glsl */ `
 precision highp float;
 varying vec3 vColor;
 varying float vSeed;
-varying vec2 vUv;
+varying vec2 vQuad;
 uniform float uTime;
 void main() {
-  float d = length(vUv - 0.5);
-  float dot = smoothstep(0.5, 0.06, d);
+  float d = length(vQuad);             // 0 at centre, 0.5 at edge midpoint
+  float dot = smoothstep(0.5, 0.04, d);
   if (dot <= 0.01) discard;
   float f = 0.5 + 0.5 * fract(sin(vSeed + floor(uTime * 3.5)) * 43758.5453);
-  gl_FragColor = vec4(vColor, dot * mix(0.10, 0.55, f));
+  gl_FragColor = vec4(vColor, dot * mix(0.5, 1.0, f));
 }
 `;
 
 export function PointCluster() {
   const mesh = useMemo(() => {
-    const N = 2600;
+    const N = 4800;
     const base = new THREE.PlaneGeometry(1, 1);
     const geo = new THREE.InstancedBufferGeometry();
     geo.index = base.index;
@@ -67,12 +68,13 @@ export function PointCluster() {
     const col = new Float32Array(N * 3);
     const seed = new Float32Array(N);
     for (let i = 0; i < N; i++) {
-      const r = Math.pow(Math.random(), 0.6) * 6.6;
+      // wider, more even spread so the field covers the whole backdrop
+      const r = Math.pow(Math.random(), 0.85) * 9.5;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       off[i * 3] = r * Math.sin(phi) * Math.cos(theta);
       off[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      off[i * 3 + 2] = r * Math.cos(phi) * 0.45;
+      off[i * 3 + 2] = r * Math.cos(phi) * 0.4;
       const c = PALETTE[(Math.random() * PALETTE.length) | 0];
       col[i * 3] = c[0];
       col[i * 3 + 1] = c[1];
@@ -90,7 +92,7 @@ export function PointCluster() {
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uTime: { value: 0 }, uSize: { value: 0.085 } },
+      uniforms: { uTime: { value: 0 }, uSize: { value: 0.18 } },
     });
     return new THREE.Mesh(geo, mat);
   }, []);
