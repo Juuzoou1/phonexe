@@ -46,6 +46,9 @@
   "build": {
     "appId": "com.phonexe.desktop",
     "productName": "phonexe",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**",
       "electron/**"
@@ -53,11 +56,15 @@
     "extraResources": [
       {
         "from": "../dist/phonexe.exe",
-        "to": "engine/phonexe.exe"
+        "to": "engine/phonexe.exe",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "../phonexe/gui/assets/appicon.ico"
     }
   }
 }
