@@ -19,35 +19,44 @@ const VERT = /* glsl */ `
 attribute vec3 iOffset;
 attribute vec3 iColor;
 attribute float iSeed;
+attribute vec2 uv;
 uniform float uTime;
 uniform float uSize;
 varying vec3 vColor;
 varying float vSeed;
+varying vec2 vUv;
 void main() {
   vColor = iColor;
   vSeed = iSeed;
-  vec3 drift = 0.25 * sin(uTime * vec3(0.6, 0.8, 0.5) + iSeed);
+  vUv = uv;
+  // slow, gentle drift (calm)
+  vec3 drift = 0.16 * sin(uTime * vec3(0.35, 0.45, 0.3) + iSeed);
   vec4 mv = modelViewMatrix * vec4(iOffset + drift, 1.0);
-  float s = uSize * (0.65 + 0.5 * abs(sin(uTime * 1.7 + iSeed)));
+  float s = uSize * (0.75 + 0.25 * sin(uTime * 0.9 + iSeed));
   mv.xy += position.xy * s;            // billboard the quad toward the camera
   gl_Position = projectionMatrix * mv;
 }
 `;
 
+// Soft ROUND dots (discard outside the unit circle), gentle flicker, low alpha.
 const FRAG = /* glsl */ `
 precision highp float;
 varying vec3 vColor;
 varying float vSeed;
+varying vec2 vUv;
 uniform float uTime;
 void main() {
-  float f = fract(sin(vSeed + floor(uTime * 8.0)) * 43758.5453);
-  gl_FragColor = vec4(vColor, mix(0.22, 1.0, f));
+  float d = length(vUv - 0.5);
+  float dot = smoothstep(0.5, 0.06, d);
+  if (dot <= 0.01) discard;
+  float f = 0.5 + 0.5 * fract(sin(vSeed + floor(uTime * 3.5)) * 43758.5453);
+  gl_FragColor = vec4(vColor, dot * mix(0.10, 0.55, f));
 }
 `;
 
 export function PointCluster() {
   const mesh = useMemo(() => {
-    const N = 5200;
+    const N = 2600;
     const base = new THREE.PlaneGeometry(1, 1);
     const geo = new THREE.InstancedBufferGeometry();
     geo.index = base.index;
@@ -81,7 +90,7 @@ export function PointCluster() {
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uTime: { value: 0 }, uSize: { value: 0.09 } },
+      uniforms: { uTime: { value: 0 }, uSize: { value: 0.085 } },
     });
     return new THREE.Mesh(geo, mat);
   }, []);
