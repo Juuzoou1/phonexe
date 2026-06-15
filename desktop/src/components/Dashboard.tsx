@@ -3,6 +3,7 @@ import { StatCard } from "@/components/StatCard";
 import { SectionTable } from "@/components/SectionTable";
 import { KeywordsView } from "@/components/KeywordsView";
 import { AnalyzeBar } from "@/components/AnalyzeBar";
+import { SubjectDossier } from "@/components/SubjectDossier";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export function Dashboard({
@@ -17,6 +18,8 @@ export function Dashboard({
   return (
     <div className="flex h-full flex-col gap-3.5 overflow-auto pl-1">
       <AnalyzeBar onLoaded={onLoaded} />
+
+      {overview && <SubjectDossier overview={overview} />}
 
       {overview && (
         <div className="grid grid-cols-6 gap-3">

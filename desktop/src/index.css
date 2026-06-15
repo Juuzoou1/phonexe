@@ -46,6 +46,19 @@ body {
 }
 @keyframes crt-flicker { 0%, 100% { opacity: 0.04; } 50% { opacity: 0.085; } }
 
+/* ---- halftone / dither textures (the print look from the references) ---- */
+/* halftone dot grid — set text color to tint; size via --ht (default 5px) */
+.halftone {
+  background-image: radial-gradient(currentColor 35%, transparent 38%);
+  background-size: var(--ht, 5px) var(--ht, 5px);
+}
+/* fine film-grain dither overlay for the whole shell */
+.grain-overlay {
+  position: fixed; inset: 0; pointer-events: none; z-index: 48; opacity: 0.5;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.045) 0.5px, transparent 0.6px);
+  background-size: 3px 3px;
+}
+
 /* ---------------------------------------------------------------- FUI chrome */
 /* corner brackets on any element (set --hud-accent to recolor per zone) */
 .hud { position: relative; }
