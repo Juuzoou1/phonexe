@@ -35,12 +35,15 @@ export function Dashboard({
                 <button
                   key={a.key}
                   onClick={() => onOpenApp(a.key)}
-                  className="flex flex-col items-center gap-2 rounded-card border border-border bg-level2 p-3 transition-colors hover:border-accent"
+                  className="hud flex flex-col items-center gap-2 rounded-card border border-border bg-level2/50 p-3 backdrop-blur-sm transition-colors hover:border-accent hover:bg-level3/60"
+                  style={{ ["--hud-accent" as string]: "#4FE3E0" }}
                 >
-                  <div className="grid h-12 w-12 place-items-center rounded-[14px] bg-level3 text-[11px] font-bold text-accent">
+                  <div className="grid h-12 w-12 place-items-center rounded-[14px] border border-accent/30 bg-level3/70 font-mono text-[13px] font-bold uppercase text-accent">
                     {a.name.slice(0, 2)}
                   </div>
-                  <div className="text-[11px]">{a.name}</div>
+                  <div dir="ltr" className="font-mono text-[10px] uppercase tracking-wide text-fdim">
+                    {a.name}
+                  </div>
                 </button>
               ))}
             </div>

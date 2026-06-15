@@ -66,11 +66,11 @@ export function TopBar({
           className="w-64 rounded-input border border-border bg-level3 py-2 pr-8 pl-3 text-[13px] outline-none focus:border-accent"
         />
       </div>
-      <div className="text-left">
-        <div className="text-[15px] font-semibold text-accent">
+      <div dir="ltr" className="text-left">
+        <div className="font-mono text-[15px] font-semibold tabular-nums text-accent [text-shadow:0_0_10px_rgba(79,227,224,.4)]">
           {now.toLocaleTimeString("en-GB")}
         </div>
-        <div className="text-[11px] text-fdim">{now.toISOString().slice(0, 10)}</div>
+        <div className="fui-label text-fdim">{now.toISOString().slice(0, 10)}</div>
       </div>
     </header>
   );
