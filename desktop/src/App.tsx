@@ -13,6 +13,9 @@ import { ReportsView } from "@/components/ReportsView";
 import { SearchView } from "@/components/SearchView";
 import { SectionTable } from "@/components/SectionTable";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ParticleField } from "@/components/bg/ParticleField";
+import { CrtOverlay } from "@/components/bg/CrtOverlay";
+import { SvgFilterDefs } from "@/components/bg/SvgFilterDefs";
 
 const SECTION_TITLES: Record<string, string> = {
   sec_apps: "التطبيقات المثبتة", sec_installed: "جرد التطبيقات",
@@ -72,7 +75,12 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-level0 text-ftext" dir="rtl">
+    <div className="relative min-h-screen">
+      <ParticleField />
+      <div
+        className="relative z-10 flex h-screen flex-col bg-level0/70 text-ftext backdrop-blur-sm"
+        dir="rtl"
+      >
       <TopBar current={view} query={query} onQuery={setQuery} onNav={go} />
       <div className="flex min-h-0 flex-1">
         <Sidebar overview={overview} current={view} onSelect={go} />
@@ -88,6 +96,9 @@ export default function App() {
           )}
         </main>
       </div>
+      </div>
+      <SvgFilterDefs />
+      <CrtOverlay />
     </div>
   );
 }

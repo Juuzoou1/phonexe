@@ -8,6 +8,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
+    // all three.js consumers (fiber/drei/postprocessing) must share ONE copy
+    dedupe: ["three"],
   },
   server: { port: 5173, strictPort: true },
   build: { outDir: "dist", emptyOutDir: true },

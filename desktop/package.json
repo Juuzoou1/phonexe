@@ -13,12 +13,21 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/archivo": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource/share-tech-mono": "^5.2.7",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "@react-three/postprocessing": "^2.19.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.460.0",
+    "maath": "^0.10.8",
+    "postprocessing": "^6.39.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
@@ -37,10 +46,18 @@
   "build": {
     "appId": "com.phonexe.desktop",
     "productName": "phonexe",
-    "files": ["dist/**", "electron/**"],
-    "extraResources": [
-      { "from": "../dist/phonexe.exe", "to": "engine/phonexe.exe" }
+    "files": [
+      "dist/**",
+      "electron/**"
     ],
-    "win": { "target": "nsis" }
+    "extraResources": [
+      {
+        "from": "../dist/phonexe.exe",
+        "to": "engine/phonexe.exe"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    }
   }
 }

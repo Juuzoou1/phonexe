@@ -7,7 +7,9 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
     <div
       ref={ref}
       className={cn(
-        "rounded-card border border-border bg-level1 shadow-glow",
+        // translucent FUI panel: the hero cluster glows through; HUD corner
+        // brackets via .hud (violet --hud-accent from :root).
+        "hud rounded-card border border-border bg-level1/70 shadow-glow backdrop-blur-md",
         className
       )}
       {...props}

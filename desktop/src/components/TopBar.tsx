@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Clock, Share2, MapPin, FileText, Shield, Search,
 } from "lucide-react";
+import { GlitchText } from "@/components/fui/GlitchText";
 
 const NAV: [string, any, string][] = [
   ["sec_overview", LayoutDashboard, "لوحة التحكم"],
@@ -29,8 +30,13 @@ export function TopBar({
     <header className="flex h-[72px] items-center gap-5 border-b border-accent/30 bg-gradient-to-b from-level1 to-level0 px-5">
       <Shield className="h-7 w-7 text-accent" />
       <div className="leading-tight">
-        <div className="text-[16px] font-bold">الأدلة والمعلومات الجنائية</div>
-        <div className="text-[11px] text-fdim">فحص الأجهزة الإلكترونية · v0.1.0</div>
+        <div className="text-[16px] font-bold">
+          <GlitchText>الأدلة والمعلومات الجنائية</GlitchText>
+        </div>
+        <div className="text-[11px] text-fdim">
+          فحص الأجهزة الإلكترونية ·{" "}
+          <span className="fui-label text-hudViolet">DOSSIER//VOID v0.1.0</span>
+        </div>
       </div>
       <nav className="mr-6 flex items-center gap-1">
         {NAV.map(([key, Icon, label]) => {
