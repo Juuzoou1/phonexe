@@ -33,7 +33,7 @@ export function AnalyzeBar({ onLoaded }: { onLoaded: (o: Overview) => void }) {
           onKeyDown={(e) => e.key === "Enter" && run()}
           placeholder="C:\\path\\to\\Backup\\<udid>  أو مجلد استخراج أندرويد"
           dir="ltr"
-          className="flex-1 rounded-input border border-border bg-level3 px-3 py-2 text-[12.5px] outline-none focus:border-accent"
+          className="flex-1 border border-border bg-level3/70 px-3 py-2 font-mono text-[12.5px] outline-none backdrop-blur-sm focus:border-accent"
         />
         <button
           onClick={run}

@@ -28,7 +28,9 @@ export function ReportsView({ overview }: { overview: Overview | null }) {
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto">
       <Card className="p-4">
-        <div className="mb-3 text-[15px] font-bold text-accent">ملخّص القضية</div>
+        <div className="mb-3 flex items-center gap-2 text-[15px] font-bold text-accent">
+          <span className="fui-label text-accent/60">// CASE</span> ملخّص القضية
+        </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[12.5px] xl:grid-cols-3">
           <Field label="الجهاز" value={d.device_name ?? d.model} />
           <Field label="النظام" value={d.product_version ?? d.android_version} />
@@ -71,9 +73,9 @@ export function ReportsView({ overview }: { overview: Overview | null }) {
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div>
-      <div className="text-[10px] text-fdim">{label}</div>
-      <div className="font-semibold">{value || "—"}</div>
+    <div className="border-r-2 border-border/60 pr-2.5">
+      <div className="text-[10px] tracking-wide text-fdim/60">{label}</div>
+      <div dir="ltr" className="text-right font-mono text-[13px] text-ftext">{value || "—"}</div>
     </div>
   );
 }

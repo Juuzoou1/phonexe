@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { api, type TimelineEvent } from "@/lib/api";
 
-const TYPE_COLOR: Record<string, string> = {
-  Message: "text-accent border-accent/40",
-  Call: "text-ok border-ok/40",
-  Web: "text-accent2 border-accent2/40",
-  Photo: "text-warn border-warn/40",
+const TYPE: Record<string, string> = {
+  Message: "text-accent border-accent/50",
+  Call: "text-ok border-ok/50",
+  Web: "text-accent2 border-accent2/50",
+  Photo: "text-warn border-warn/50",
 };
 
 export function TimelineView() {
@@ -15,26 +15,34 @@ export function TimelineView() {
     api.timeline().then((d) => setEvents(d.events)).catch(() => setEvents([]));
   }, []);
 
-  if (!events) return <div className="p-6 text-fdim">جارٍ التحميل…</div>;
+  if (!events) return <div className="fui-label p-6 text-accent">// LOADING…</div>;
 
   return (
-    <div className="h-full overflow-auto pr-2">
-      <div className="border-r-2 border-border pr-4">
+    <div className="h-full overflow-auto pr-1">
+      <div className="fui-label mb-3 text-fdim/70">
+        // EVENT&nbsp;LOG · {events.length.toLocaleString("en-US")}&nbsp;ENTRIES
+      </div>
+      <div className="flex flex-col">
         {events.map((e, i) => (
-          <div key={i} className="relative mb-3 pr-4">
-            <span className="absolute right-[-21px] top-1.5 h-2.5 w-2.5 rounded-full bg-accent" />
-            <div className="rounded-card border border-border bg-level2 px-3 py-2">
-              <div className="mb-1 flex items-center gap-2">
-                <span className={`rounded-input border px-2 py-0.5 text-[10px] font-semibold ${TYPE_COLOR[e.type] ?? "text-fdim border-border"}`}>
-                  {e.type}
-                </span>
-                <span className="text-[11px] text-fdim">{e.source}</span>
-                <span className="mr-auto text-[11px] text-fdim" dir="ltr">
-                  {e.timestamp.replace("T", " ").slice(0, 19)}
-                </span>
-              </div>
-              <div className="text-[12.5px]">{e.detail}</div>
-            </div>
+          <div
+            key={i}
+            className="flex items-center gap-3 border-b border-border/40 py-2 hover:bg-accent/5"
+          >
+            <span className="h-7 w-[3px] shrink-0 bg-accent/50" />
+            <span dir="ltr" className="w-[140px] shrink-0 font-mono text-[11px] tabular-nums text-fdim">
+              {e.timestamp.replace("T", " ").slice(0, 19)}
+            </span>
+            <span
+              className={`shrink-0 border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+                TYPE[e.type] ?? "border-border text-fdim"
+              }`}
+            >
+              {e.type}
+            </span>
+            <span className="w-20 shrink-0 truncate font-mono text-[10px] uppercase text-fdim/55">
+              {e.source}
+            </span>
+            <span className="flex-1 truncate text-[12.5px]">{e.detail}</span>
           </div>
         ))}
       </div>
