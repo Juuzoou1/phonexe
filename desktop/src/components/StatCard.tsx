@@ -20,11 +20,7 @@ const CODES: Record<string, string> = {
 
 export function StatCard({ k, value }: { k: string; value: number }) {
   return (
-    <Card
-      className="relative overflow-hidden bg-level2/55 px-4 py-3 transition-colors hover:border-accent hover:bg-level3/60"
-      style={{ ["--hud-accent" as string]: "#4FE3E0" }}
-    >
-      <div className="absolute left-0 top-0 h-[3px] w-8 bg-accent/70" />
+    <Card className="bg-level2/55 px-4 py-3 transition-colors hover:bg-level3/60">
       <div className="font-mono text-[32px] font-bold leading-none tabular-nums text-accent [text-shadow:0_0_14px_rgba(79,227,224,.45)]">
         {value.toLocaleString("en-US")}
       </div>

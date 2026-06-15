@@ -1,20 +1,28 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-/** shadcn-style Card on the level-1 surface with a subtle cyan glow. */
+/** FUI frame panel: hard (non-rounded) translucent surface with bold L-shaped
+ *  corner brackets and a top accent tab — the dossier/HUD look, not a soft card. */
 export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+  ({ className, children, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        // translucent FUI panel: the hero cluster glows through; HUD corner
-        // brackets via .hud (violet --hud-accent from :root).
-        "hud rounded-card border border-border bg-level1/70 shadow-glow backdrop-blur-md",
-        className
+        "fui-frame relative border border-border/70 bg-level1/60 shadow-glow backdrop-blur-md",
+        className,
       )}
       {...props}
-    />
-  )
+    >
+      {/* top accent tab */}
+      <span className="pointer-events-none absolute right-3 -top-px h-[2px] w-10 bg-accent/70" />
+      {/* four L-shaped corner brackets */}
+      <span className="pointer-events-none absolute -left-px -top-px h-4 w-4 border-l-2 border-t-2 border-accent/80" />
+      <span className="pointer-events-none absolute -right-px -top-px h-4 w-4 border-r-2 border-t-2 border-accent/80" />
+      <span className="pointer-events-none absolute -bottom-px -left-px h-4 w-4 border-b-2 border-l-2 border-accent/80" />
+      <span className="pointer-events-none absolute -bottom-px -right-px h-4 w-4 border-b-2 border-r-2 border-accent/80" />
+      {children}
+    </div>
+  ),
 );
 Card.displayName = "Card";
 
@@ -27,7 +35,7 @@ export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHead
     <h3
       className={cn(
         "border-r-2 border-accent pr-2.5 text-[15px] font-bold text-ftext",
-        className
+        className,
       )}
       {...props}
     />
