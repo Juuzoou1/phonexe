@@ -95,7 +95,7 @@ QPushButton#navBtn:checked {{
 
 /* ---- panels / cards (solid, 1px border, 12px radius per spec) ---- */
 QFrame#panel, QFrame#card {{
-    background: {PANEL}; border: 1px solid {BORDER};
+    background: {PANEL_GLASS}; border: 1px solid {BORDER};
     border-radius: {RADIUS_CARD}px;
 }}
 QLabel#panelTitle {{
@@ -142,9 +142,9 @@ QPushButton#danger:hover {{ background: {DANGER}; color: {TEXT}; }}
 
 /* ---- stat cards ---- */
 QFrame#statCard {{
-    background: {LEVEL2}; border: 1px solid {BORDER}; border-radius: {RADIUS_CARD}px;
+    background: {CARD_GLASS}; border: 1px solid {BORDER}; border-radius: {RADIUS_CARD}px;
 }}
-QFrame#statCard:hover {{ background: {LEVEL3}; border: 1px solid {ACCENT}; }}
+QFrame#statCard:hover {{ background: {CARD_GLASS_HI}; border: 1px solid {ACCENT}; }}
 QLabel#statValue {{ font-size: {FS_DISPLAY + 6}px; font-weight: {W_BOLD}; }}
 QLabel#statLabel {{ font-size: {FS_LABEL}px; color: {TEXT_DIM};
     font-weight: {W_MED}; }}
@@ -170,7 +170,7 @@ QLineEdit:focus {{ border-color: {ACCENT}; }}
 
 /* ---- device card ---- */
 QFrame#deviceCard {{
-    background: {LEVEL2}; border: 1px solid {BORDER}; border-radius: {RADIUS_CARD}px;
+    background: {CARD_GLASS}; border: 1px solid {BORDER}; border-radius: {RADIUS_CARD}px;
 }}
 QLabel#deviceName {{ font-size: {FS_BODY + 1}px; font-weight: {W_BOLD}; }}
 QLabel#deviceMeta {{ font-size: {FS_SMALL}px; color: {TEXT_DIM}; }}

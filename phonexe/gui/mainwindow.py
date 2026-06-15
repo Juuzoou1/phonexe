@@ -162,14 +162,24 @@ class MainWindow(QWidget):
         self._worker: AnalyzeWorker | None = None
         self._acq_worker = None
 
-        # live "data constellation" background: drifting nodes + links
+        # live tech-noir background: a drifting, flickering field of colored
+        # boxes (rainbow cluster) painted in paintEvent.
         import random
-        self._nodes = [[random.random(), random.random(),
-                        (random.random() - 0.5) * 0.0014,
-                        (random.random() - 0.5) * 0.0014]
-                       for _ in range(56)]
+        self._boxes = []
+        for _ in range(150):
+            x = min(max(random.gauss(0.5, 0.26), 0.0), 1.0)
+            y = min(max(random.gauss(0.44, 0.28), 0.0), 1.0)
+            self._boxes.append([
+                x, y,
+                (random.random() - 0.5) * 0.0016,   # vx
+                (random.random() - 0.5) * 0.0016,   # vy
+                random.randint(5, 22),               # size px
+                random.random(),                     # hue 0..1
+                random.random() * 6.283,             # flicker phase
+                random.uniform(0.55, 1.0),           # alpha factor
+            ])
         self._bg_timer = QTimer(self)
-        self._bg_timer.timeout.connect(self._tick_nodes)
+        self._bg_timer.timeout.connect(self._tick_bg)
 
         self.setWindowTitle("phonexe")
         self.resize(1360, 860)
@@ -190,6 +200,7 @@ class MainWindow(QWidget):
         body.addWidget(self._build_sidebar(), 0)
         body_w = QWidget()
         body_w.setLayout(body)
+        body_w.setStyleSheet("background: transparent;")  # let the box field show
         root.addWidget(body_w, 1)
 
         self._start_clock()
@@ -207,19 +218,19 @@ class MainWindow(QWidget):
         self._bg_timer.stop()
         super().hideEvent(e)
 
-    def _tick_nodes(self):
-        for n in self._nodes:
-            n[0] += n[2]
-            n[1] += n[3]
-            if n[0] <= 0 or n[0] >= 1:
-                n[2] = -n[2]
-            if n[1] <= 0 or n[1] >= 1:
-                n[3] = -n[3]
+    def _tick_bg(self):
+        for b in self._boxes:
+            b[0] += b[2]
+            b[1] += b[3]
+            if b[0] <= 0 or b[0] >= 1:
+                b[2] = -b[2]
+            if b[1] <= 0 or b[1] >= 1:
+                b[3] = -b[3]
+            b[6] += 0.11   # advance flicker
         self.update()
 
     def paintEvent(self, _e):  # noqa: N802
         """Dark base + ambient glow + a live drifting 'data constellation'."""
-        from PyQt6.QtCore import QPointF
         from PyQt6.QtGui import QColor, QPainter, QPen, QRadialGradient
 
         p = QPainter(self)
@@ -242,39 +253,34 @@ class MainWindow(QWidget):
         glow(w * 0.10, h * 0.96, w * 0.55, theme.ACCENT2, 34)
         glow(w * 0.5, h * 0.45, w * 0.6, theme.ACCENT2, 8)
 
-        # ---- live data constellation: strong blue glow ----
-        from PyQt6.QtGui import QColor as _QC
-        pts = [QPointF(n[0] * w, n[1] * h) for n in self._nodes]
-        thresh = max(w, h) * 0.11
-        blue = _QC("#3AB8FF")          # vivid blue
-        for i in range(len(pts)):
-            a = pts[i]
-            for j in range(i + 1, len(pts)):
-                b = pts[j]
-                dx, dy = a.x() - b.x(), a.y() - b.y()
-                d2 = dx * dx + dy * dy
-                if d2 < thresh * thresh:
-                    t = 1 - (d2 ** 0.5) / thresh
-                    if t <= 0:
-                        continue
-                    # subtle blue link (soft underlay + faint core)
-                    blue.setAlpha(int(22 * t))
-                    p.setPen(QPen(blue, 2.4))
-                    p.drawLine(a, b)
-                    blue.setAlpha(int(64 * t))
-                    p.setPen(QPen(blue, 1.0))
-                    p.drawLine(a, b)
-        # faint nodes
-        p.setPen(Qt.PenStyle.NoPen)
-        for a in pts:
-            blue.setAlpha(18)
-            p.setBrush(blue)
-            p.drawEllipse(a, 6, 6)        # halo
-            blue.setAlpha(70)
-            p.setBrush(blue)
-            p.drawEllipse(a, 2.4, 2.4)
-            p.setBrush(_QC(200, 230, 255, 170))
-            p.drawEllipse(a, 1.2, 1.2)    # core
+        # ---- live colorful "box field" (tech-noir, like the references) ----
+        import math
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        cxp, cyp = w * 0.5, h * 0.44
+        maxd = math.hypot(w * 0.62, h * 0.62)
+        for b in self._boxes:
+            x, y = b[0] * w, b[1] * h
+            s = int(b[4])
+            fade = 1.0 - math.hypot(x - cxp, y - cyp) / maxd
+            if fade <= 0.03:
+                continue
+            flick = 0.4 + 0.6 * abs(math.sin(b[6]))
+            col = QColor.fromHsvF(b[5], 0.85, 1.0)
+            col.setAlpha(int(210 * fade * flick * b[7]))
+            p.setPen(QPen(col, 1.4))
+            p.drawRect(int(x - s / 2), int(y - s / 2), s, s)
+            if b[7] > 0.85:                      # faint inner glow on some
+                col.setAlpha(int(45 * fade * flick))
+                p.fillRect(int(x - s / 2) + 1, int(y - s / 2) + 1,
+                           max(0, s - 2), max(0, s - 2), col)
+
+        # ---- subtle scanlines (CRT / terminal feel) ----
+        sl = QColor(0, 0, 0, 26)
+        p.setPen(QPen(sl, 1))
+        yy = 0
+        while yy < h:
+            p.drawLine(0, yy, w, yy)
+            yy += 4
         p.end()
 
     # ------------------------------------------------------------ top bar
@@ -454,6 +460,7 @@ class MainWindow(QWidget):
     # ------------------------------------------------------------ center
     def _build_center(self) -> QWidget:
         wrap = QWidget()
+        wrap.setStyleSheet("background: transparent;")  # box field shows through
         lay = QVBoxLayout(wrap)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(14)
