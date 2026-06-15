@@ -23,7 +23,11 @@ export function ChatView({ appKey, appName }: { appKey: string; appName: string 
   const active = convos[Math.min(sel, convos.length - 1)];
 
   return (
-    <div className="flex h-full overflow-hidden rounded-card border border-border">
+    <div className="relative flex h-full overflow-hidden border border-accent/25">
+      <span className="pointer-events-none absolute left-0 top-0 z-20 h-4 w-4 border-l-2 border-t-2 border-accent/80" />
+      <span className="pointer-events-none absolute right-0 top-0 z-20 h-4 w-4 border-r-2 border-t-2 border-accent/80" />
+      <span className="pointer-events-none absolute bottom-0 left-0 z-20 h-4 w-4 border-b-2 border-l-2 border-accent/80" />
+      <span className="pointer-events-none absolute bottom-0 right-0 z-20 h-4 w-4 border-b-2 border-r-2 border-accent/80" />
       {/* thread list */}
       <div className="w-64 shrink-0 overflow-y-auto border-l border-border bg-level1">
         <div
