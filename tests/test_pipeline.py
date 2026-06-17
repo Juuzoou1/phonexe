@@ -110,6 +110,29 @@ def test_export_dumps_photos_videos_and_conversations(backup, tmp_path):
     assert (out / "manifest.json").is_file()
 
 
+def test_export_selection_only_includes_chosen_items(backup, tmp_path):
+    from phonexe.analyze import analyze
+    from phonexe import export
+
+    report = analyze(backup.path)
+    out = tmp_path / "selected"
+    # Examiner picks ONLY the one photo; the video is left out.
+    summary = export.export_selection(
+        report, out, photos=["IMG_0007.JPG"], videos=[])
+
+    assert summary["photos"] == 1
+    assert summary["videos"] == 0
+    # only the chosen photo is copied; no stray video file
+    assert list((out / "selected_media").glob("*.JPG"))
+    assert not list((out / "selected_videos").iterdir())
+    # the report names the selected photo and nothing else
+    html_text = (out / "selected_report.html").read_text(encoding="utf-8")
+    assert "IMG_0007.JPG" in html_text
+    assert "IMG_0008.MOV" not in html_text
+    sel = json.loads((out / "selection.json").read_text(encoding="utf-8"))
+    assert len(sel["photos"]) == 1 and sel["videos"] == []
+
+
 def test_encrypted_backup_rejected(tmp_path):
     build(tmp_path / "backup")
     import plistlib

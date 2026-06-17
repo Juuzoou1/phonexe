@@ -278,3 +278,135 @@ def export_all(report: dict, dest: str | Path) -> dict:
         json.dumps(manifest, ensure_ascii=False, indent=2, default=str),
         encoding="utf-8")
     return manifest
+
+
+# ------------------------------------------------------------------ selection
+def _photo_records(report: dict) -> list[dict]:
+    return (report.get("artifacts", {}).get("photos", {}) or {}).get("records", []) or []
+
+
+def _video_records(report: dict) -> list[dict]:
+    return (report.get("artifacts", {}).get("videos", {}) or {}).get("records", []) or []
+
+
+def _matches(rec: dict, selection) -> bool:
+    """True if *rec* is named by *selection* (by relative_path or basename)."""
+    rp = rec.get("relative_path") or ""
+    return rp in selection or Path(rp).name in selection
+
+
+def export_selection(report: dict, dest: str | Path, *,
+                     photos=None, videos=None) -> dict:
+    """Build a report containing ONLY the selected photos/videos.
+
+    *photos* / *videos* are iterables of identifiers (each item's
+    ``relative_path`` or just its file name). Only matching items are copied
+    out and listed in ``selected_report.html`` — the evidentiary subset the
+    examiner chose, nothing else.
+    """
+    dest = Path(dest)
+    media_dir = dest / "selected_media"
+    vid_dir = dest / "selected_videos"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    vid_dir.mkdir(parents=True, exist_ok=True)
+
+    photos = set(photos or [])
+    videos = set(videos or [])
+    chosen_photos: list[dict] = []
+    chosen_videos: list[dict] = []
+
+    for rec in _photo_records(report):
+        if not _matches(rec, photos):
+            continue
+        src = rec.get("stored_at")
+        if not src or not Path(src).is_file():
+            continue
+        out = _unique(media_dir, _slug(Path(rec.get("relative_path") or src).name,
+                                       "photo"))
+        try:
+            shutil.copy2(src, out)
+        except OSError:
+            continue
+        exif = rec.get("exif", {}) or {}
+        chosen_photos.append({
+            "relative_path": rec.get("relative_path", ""),
+            "exported_as": out.name,
+            "lat": exif.get("gps_latitude"),
+            "lon": exif.get("gps_longitude"),
+            "taken": exif.get("DateTimeOriginal") or exif.get("DateTime"),
+        })
+
+    for rec in _video_records(report):
+        if not _matches(rec, videos):
+            continue
+        src = rec.get("stored_at")
+        if not src or not Path(src).is_file():
+            continue
+        out = _unique(vid_dir, _slug(Path(rec.get("relative_path") or src).name,
+                                     "video"))
+        try:
+            shutil.copy2(src, out)
+        except OSError:
+            continue
+        chosen_videos.append({
+            "relative_path": rec.get("relative_path", ""),
+            "exported_as": out.name,
+            "size_bytes": rec.get("size_bytes"),
+        })
+
+    _write_selection_report(dest, report, chosen_photos, chosen_videos)
+    summary = {
+        "photos": len(chosen_photos),
+        "videos": len(chosen_videos),
+        "report": str(dest / "selected_report.html"),
+    }
+    (dest / "selection.json").write_text(
+        json.dumps({"device": report.get("device", {}),
+                    "photos": chosen_photos, "videos": chosen_videos},
+                   ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8")
+    return summary
+
+
+def _write_selection_report(dest: Path, report: dict,
+                            photos: list[dict], videos: list[dict]) -> None:
+    dev = report.get("device", {}) or {}
+    dev_name = html.escape(str(dev.get("device_name")
+                               or dev.get("name") or "Device"))
+
+    def gps_link(p):
+        if p.get("lat") is not None and p.get("lon") is not None:
+            return (f'<a href="https://www.openstreetmap.org/?mlat={p["lat"]}'
+                    f'&mlon={p["lon"]}" style="color:#ffd479">📍 GPS</a>')
+        return ""
+
+    photo_cards = "".join(
+        f'<figure style="margin:0;background:#0D1724;border:1px solid #14304A;'
+        f'border-radius:10px;padding:8px;width:200px">'
+        f'<img src="selected_media/{html.escape(p["exported_as"])}" '
+        f'style="width:100%;height:140px;object-fit:cover;border-radius:6px">'
+        f'<figcaption style="font-size:11px;color:#bcd;margin-top:6px">'
+        f'{html.escape(p["relative_path"])}<br>'
+        f'{html.escape(str(p.get("taken") or ""))} {gps_link(p)}</figcaption>'
+        f'</figure>'
+        for p in photos
+    )
+    video_rows = "".join(
+        f'<li><a href="selected_videos/{html.escape(v["exported_as"])}" '
+        f'style="color:#4FE3E0">{html.escape(v["relative_path"])}</a></li>'
+        for v in videos
+    )
+    (dest / "selected_report.html").write_text(
+        f'<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">'
+        f'<title>تقرير الأدلة المحددة</title></head>'
+        f'<body style="background:#050B12;color:#e6f1ff;'
+        f'font-family:Segoe UI,Arial;margin:0;padding:22px">'
+        f'<h1 style="color:#4FE3E0">تقرير الأدلة المحددة</h1>'
+        f'<p style="color:#90A6BC">الجهاز: {dev_name} · '
+        f'الصور: {len(photos)} · الفيديو: {len(videos)}</p>'
+        f'<h2 style="color:#24A8FF">الصور المحددة</h2>'
+        f'<div style="display:flex;flex-wrap:wrap;gap:12px">'
+        f'{photo_cards or "<p style=color:#889>لا توجد صور محددة.</p>"}</div>'
+        f'<h2 style="color:#24A8FF;margin-top:24px">الفيديوهات المحددة</h2>'
+        f'<ul>{video_rows or "<li style=color:#889>لا توجد فيديوهات محددة.</li>"}'
+        f'</ul></body></html>', encoding="utf-8")

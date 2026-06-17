@@ -158,6 +158,19 @@ def _cmd_export(args) -> int:
 
     out = Path(args.output or "phonexe_export")
     print(BANNER)
+
+    # Selective mode: report only the photos/videos the examiner named.
+    if args.select_photos is not None or args.select_videos is not None:
+        print(f"[i] Building a selected-evidence report in: {out}")
+        summary = _export.export_selection(
+            report, out,
+            photos=args.select_photos or [],
+            videos=args.select_videos or [])
+        print(f"[+] Selected photos : {summary['photos']}")
+        print(f"[+] Selected videos : {summary['videos']}")
+        print(f"[+] Open {summary['report']} to review.")
+        return 0
+
     print(f"[i] Offloading evidence to: {out}")
     result = _export.export_all(report, out)
     media = result["media"]
@@ -473,6 +486,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_exp.add_argument("source",
                        help="path to an iOS backup or Android extraction")
     p_exp.add_argument("-o", "--output", help="output directory for the dump")
+    p_exp.add_argument("--select-photos", nargs="*", metavar="NAME",
+                       help="report only these photos (file name or path); "
+                            "enables selected-evidence mode")
+    p_exp.add_argument("--select-videos", nargs="*", metavar="NAME",
+                       help="report only these videos (file name or path); "
+                            "enables selected-evidence mode")
     p_exp.set_defaults(func=_cmd_export)
 
     # ---- local API server (for the Electron/React frontend) ----
