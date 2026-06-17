@@ -410,3 +410,92 @@ def _write_selection_report(dest: Path, report: dict,
         f'<h2 style="color:#24A8FF;margin-top:24px">الفيديوهات المحددة</h2>'
         f'<ul>{video_rows or "<li style=color:#889>لا توجد فيديوهات محددة.</li>"}'
         f'</ul></body></html>', encoding="utf-8")
+
+
+# ----------------------------------------- generalized cart -> final report
+def build_selection_report(report: dict, dest: str | Path,
+                           items: list[dict]) -> dict:
+    """Render a single report from rows the examiner selected across ANY section.
+
+    *items* is a list of ``{"section": str, "title": str, "columns": [...],
+    "row": [...]}`` entries — exactly what each table already holds — so the
+    same mechanism covers photos, videos, messages, contacts, calls, etc.
+    Media rows (those carrying a recognisable file path) are also copied out so
+    the report is self-contained.
+    """
+    dest = Path(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    media_dir = dest / "report_media"
+
+    # Group selected rows by their human-readable section title.
+    groups: dict[str, dict] = {}
+    for it in items:
+        g = groups.setdefault(
+            it.get("title") or it.get("section") or "Section",
+            {"columns": it.get("columns", []), "rows": []})
+        g["rows"].append(it.get("row", []))
+
+    # Resolve photo/video file paths so we can copy the actual evidence out.
+    path_index = {}
+    for rec in _photo_records(report) + _video_records(report):
+        rp = rec.get("relative_path") or ""
+        if rp and rec.get("stored_at"):
+            path_index[rp] = rec["stored_at"]
+            path_index[Path(rp).name] = rec["stored_at"]
+
+    copied = 0
+    sections_html = []
+    for title, g in groups.items():
+        cols = g["columns"]
+        head = "".join(f"<th style='text-align:right;padding:6px 10px;"
+                       f"border-bottom:1px solid #14304A;color:#4FE3E0'>"
+                       f"{html.escape(str(c))}</th>" for c in cols)
+        body_rows = []
+        for row in g["rows"]:
+            cells = []
+            for c, val in zip(cols, row):
+                text = html.escape(str(val))
+                # copy & thumbnail media when the cell is a known file path
+                if c == "path" and str(val) in path_index:
+                    media_dir.mkdir(parents=True, exist_ok=True)
+                    out = _unique(media_dir, _slug(Path(val).name, "evi"))
+                    try:
+                        shutil.copy2(path_index[str(val)], out)
+                        copied += 1
+                        if out.suffix.lower() in (".jpg", ".jpeg", ".png",
+                                                  ".heic", ".tiff"):
+                            text = (f'{text}<br><img src="report_media/'
+                                    f'{html.escape(out.name)}" style="max-width:160px;'
+                                    f'border-radius:6px;margin-top:4px">')
+                        else:
+                            text = (f'<a href="report_media/{html.escape(out.name)}"'
+                                    f' style="color:#4FE3E0">{text}</a>')
+                    except OSError:
+                        pass
+                cells.append(f"<td style='padding:6px 10px;border-bottom:"
+                             f"1px solid #0e1b2a;vertical-align:top'>{text}</td>")
+            body_rows.append(f"<tr>{''.join(cells)}</tr>")
+        sections_html.append(
+            f"<h2 style='color:#24A8FF;margin-top:26px'>{html.escape(title)} "
+            f"<span style='font-size:13px;color:#90A6BC'>"
+            f"({len(g['rows'])})</span></h2>"
+            f"<table style='width:100%;border-collapse:collapse;font-size:13px'>"
+            f"<thead><tr>{head}</tr></thead><tbody>{''.join(body_rows)}</tbody></table>"
+        )
+
+    dev = report.get("device", {}) or {}
+    dev_name = html.escape(str(dev.get("device_name") or dev.get("name") or "Device"))
+    total = sum(len(g["rows"]) for g in groups.values())
+    (dest / "final_report.html").write_text(
+        f'<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">'
+        f'<title>التقرير النهائي</title></head>'
+        f'<body style="background:#02070D;color:#e6f1ff;'
+        f'font-family:Segoe UI,Arial;margin:0;padding:24px">'
+        f'<h1 style="color:#4FE3E0">التقرير النهائي — الأدلة المحددة</h1>'
+        f'<p style="color:#90A6BC">الجهاز: {dev_name} · '
+        f'إجمالي العناصر: {total} · ملفات منسوخة: {copied}</p>'
+        f'{"".join(sections_html) or "<p style=color:#889>لم تُحدَّد عناصر.</p>"}'
+        f'</body></html>', encoding="utf-8")
+
+    return {"items": total, "sections": len(groups), "media_copied": copied,
+            "report": str(dest / "final_report.html")}

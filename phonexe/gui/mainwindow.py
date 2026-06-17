@@ -155,6 +155,9 @@ class MainWindow(QWidget):
         self.bookmarks: list[dict] = []
         self._current_cols: list[str] = []
         self._search_results: list[dict] = []
+        # selection cart: rows the examiner picked across any section, for the
+        # final combined report. Each item: {section, title, columns, row}.
+        self._cart: list[dict] = []
         self.audit = AuditLog(examiner)
         if case_id:
             self.audit.record("case_opened", case_id)
@@ -507,15 +510,20 @@ class MainWindow(QWidget):
         self.csv_btn = PushButton(tr("export_csv"))
         self.csv_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.csv_btn.clicked.connect(self.export_section_csv)
-        # "export selected" — shown only for the photos / videos sections
-        self.export_sel_btn = PushButton(tr("export_selected"))
-        self.export_sel_btn.setObjectName("primary")
-        self.export_sel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.export_sel_btn.clicked.connect(self.export_selected_media)
-        self.export_sel_btn.setVisible(False)
+        # add checked rows (any section) to the report cart
+        self.add_sel_btn = PushButton(tr("add_to_report"))
+        self.add_sel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.add_sel_btn.clicked.connect(self.add_selected_to_cart)
+        self.add_sel_btn.setVisible(False)
+        # build the final combined report from everything in the cart
+        self.final_btn = PushButton(tr("final_report"))
+        self.final_btn.setObjectName("primary")
+        self.final_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.final_btn.clicked.connect(self.build_final_report)
         chead.addWidget(self.section_title_lbl)
         chead.addStretch(1)
-        chead.addWidget(self.export_sel_btn)
+        chead.addWidget(self.add_sel_btn)
+        chead.addWidget(self.final_btn)
         chead.addWidget(self.csv_btn)
         chead.addWidget(self.search_box)
         cp.addLayout(chead)
@@ -1007,10 +1015,15 @@ class MainWindow(QWidget):
     def _populate_table(self):
         report = self.report or {"artifacts": {}}
         section = self.current_section
-        # select-mode is only enabled by the photos/videos branch below;
-        # reset here so it never leaks into other sections' tables.
+        # select-mode is enabled only by the tabular branch below; reset here
+        # so it never leaks into the map / grid / overview screens.
         self._select_mode = None
-        self.export_sel_btn.setVisible(False)
+        self.add_sel_btn.setVisible(False)
+        # the final-report button is available whenever the cart has items
+        self.final_btn.setVisible(bool(self._cart))
+        self.final_btn.setText(
+            f"{tr('final_report')} ({len(self._cart)})" if self._cart
+            else tr("final_report"))
 
         # rich overview dashboard
         if section == "sec_overview":
@@ -1096,14 +1109,14 @@ class MainWindow(QWidget):
         cols, rows, note = section_table(report, table_section)
         self.note_lbl.setText(note)
         self.note_lbl.setVisible(bool(note))
-        # Photos / videos sections are selectable for a focused report.
-        self._select_mode = ({"sec_media": "photos",
-                              "sec_videos": "videos"}.get(section))
-        self.export_sel_btn.setVisible(self._select_mode is not None)
+        # Every tabular section is selectable for the combined final report.
+        self._select_mode = table_section
+        self._select_title = tr(table_section)
+        self.add_sel_btn.setVisible(True)
         self._current_cols = cols
         self._all_rows = rows
         self.table.clear()
-        disp_cols = (["✓"] + cols) if self._select_mode else cols
+        disp_cols = ["✓"] + cols
         self.table.setColumnCount(len(disp_cols))
         self.table.setHorizontalHeaderLabels(disp_cols)
         self._fill_rows(rows)
@@ -1307,33 +1320,50 @@ class MainWindow(QWidget):
                 self.table.setItem(r, c + offset, QTableWidgetItem(val))
         self.table.resizeColumnsToContents()
 
-    def export_selected_media(self):
-        """Build a report containing only the checked photos/videos."""
-        select = getattr(self, "_select_mode", None)
-        if not self.report or not select:
+    def add_selected_to_cart(self):
+        """Add the checked rows of the current section to the report cart."""
+        if not getattr(self, "_select_mode", None):
             return
-        # column 0 is the checkbox; the "path" data column follows it.
-        path_col = (self._current_cols.index("path") + 1
-                    if "path" in self._current_cols else 1)
-        chosen = []
+        cols = self._current_cols
+        added = 0
         for r in range(self.table.rowCount()):
             chk = self.table.item(r, 0)
-            cell = self.table.item(r, path_col)
-            if chk and chk.checkState() == Qt.CheckState.Checked and cell:
-                chosen.append(cell.text())
-        if not chosen:
+            if not chk or chk.checkState() != Qt.CheckState.Checked:
+                continue
+            row = [(self.table.item(r, c + 1).text()
+                    if self.table.item(r, c + 1) else "")
+                   for c in range(len(cols))]
+            self._cart.append({"section": self._select_mode,
+                               "title": self._select_title,
+                               "columns": cols, "row": row})
+            added += 1
+        if not added:
             QMessageBox.information(self, "phonexe", tr("select_some"))
             return
-        out = QFileDialog.getExistingDirectory(self, tr("export_selected"))
+        self.audit.record("report_selection",
+                          f"{added} rows from {self._select_mode}")
+        self.final_btn.setVisible(True)
+        self.final_btn.setText(f"{tr('final_report')} ({len(self._cart)})")
+        notify(self, tr("add_to_report"),
+               tr("added_n").format(n=added), success=True)
+
+    def build_final_report(self):
+        """Render one combined report from every selected row in the cart."""
+        if not self.report:
+            return
+        if not self._cart:
+            QMessageBox.information(self, "phonexe", tr("select_some"))
+            return
+        out = QFileDialog.getExistingDirectory(self, tr("final_report"))
         if not out:
             return
         from .. import export as _export
-        kwargs = {select: chosen}
-        summary = _export.export_selection(self.report, out, **kwargs)
-        self.audit.record("selected_export",
-                          f"{summary['photos']} photos, {summary['videos']} videos")
-        notify(self, tr("export_selected"),
-               f"{summary['photos'] + summary['videos']} → {out}", success=True)
+        summary = _export.build_selection_report(self.report, out, self._cart)
+        self.audit.record("final_report",
+                          f"{summary['items']} items, "
+                          f"{summary['media_copied']} media")
+        notify(self, tr("final_report"),
+               f"{summary['items']} → {out}", success=True)
 
     def _apply_filter(self, text: str):
         text = text.strip().lower()

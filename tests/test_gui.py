@@ -187,10 +187,11 @@ def test_qt_smoke(tmp_path):
     app.processEvents()
 
 
-def test_media_section_is_selectable(tmp_path):
+def test_selection_cart_and_final_report(tmp_path):
     pytest.importorskip("PyQt6.QtWidgets")
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     try:
+        from PyQt6.QtCore import Qt
         from PyQt6.QtWidgets import QApplication
         from phonexe.gui.mainwindow import MainWindow
     except Exception:
@@ -201,20 +202,30 @@ def test_media_section_is_selectable(tmp_path):
     win.report = analyze(tmp_path / "backup")
     win.refresh_views()
 
-    # photos section turns on select-mode and adds a leading checkbox column
+    # every tabular section is selectable: a leading checkbox column is added
     win.select_section("sec_media")
-    assert win._select_mode == "photos"
-    assert win.export_sel_btn.isVisible() or True  # visible flag set
+    assert win._select_mode == "sec_media"
     assert win.table.columnCount() == len(win._current_cols) + 1
 
-    # switching to a non-selectable section clears select-mode again
-    win.select_section("sec_contacts")
-    assert win._select_mode is None
-    assert win.table.columnCount() == len(win._current_cols)
+    # check the first photo row and add it to the cart
+    win.table.item(0, 0).setCheckState(Qt.CheckState.Checked)
+    win.add_selected_to_cart()
+    assert len(win._cart) == 1
 
-    # videos section is selectable too
-    win.select_section("sec_videos")
-    assert win._select_mode == "videos"
+    # selection generalises to non-media sections too (e.g. contacts)
+    win.select_section("sec_contacts")
+    assert win._select_mode == "sec_contacts"
+    win.table.item(0, 0).setCheckState(Qt.CheckState.Checked)
+    win.add_selected_to_cart()
+    assert len(win._cart) == 2
+
+    # the cart renders into one combined report (no dialog: call engine直接)
+    from phonexe import export
+    summary = export.build_selection_report(win.report, tmp_path / "rep",
+                                             win._cart)
+    assert summary["items"] == 2 and summary["sections"] == 2
+    assert summary["media_copied"] >= 1  # the photo was copied out
+    assert (tmp_path / "rep" / "final_report.html").is_file()
     app.processEvents()
     win.deleteLater()
     app.processEvents()

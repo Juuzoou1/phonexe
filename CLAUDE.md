@@ -40,6 +40,11 @@ authorized-use scope.
     Photos and videos are **separate artifact categories** (`photos` vs `videos`
     extractors; `sec_media`=الصور, `sec_videos`=الفيديو) so they can be reviewed/
     selected/exported independently.
+  - Selection → final report: `export.export_selection` (photos/videos subset,
+    used by the API `POST /api/export-selection`) and `export.build_selection_report`
+    (combined report from rows the examiner checked across **any** section). In
+    the PyQt GUI every tabular section has a leading checkbox column + "أضف
+    للتقرير"/"التقرير النهائي" buttons backed by a session cart (`self._cart`).
   - `reporting/` — JSON/HTML/PDF reports.
   - `server.py` + `phonexe serve` — local JSON API for the React frontend.
 - **PyQt6 desktop GUI** (current, working): `phonexe/gui/`
