@@ -10,7 +10,7 @@ import pytest
 from phonexe.apps import social, whatsapp
 from phonexe.backup import BackupError, IOSBackup
 from phonexe.cli import main
-from phonexe.extractors import calls, contacts, messages
+from phonexe.extractors import calls, contacts, messages, photos, videos
 from phonexe.timeutil import cocoa_to_iso, unix_to_iso
 from tests.make_sample_backup import build
 
@@ -76,6 +76,38 @@ def test_social_detects_instagram(backup):
     assert "instagram" in out["apps"]
     tables = out["apps"]["instagram"]["databases"][0]["tables"]
     assert any(t["table"] == "direct_messages" for t in tables)
+
+
+def test_photos_and_videos_are_separate(backup):
+    pics = photos.extract(backup)
+    vids = videos.extract(backup)
+    # The camera roll holds one image and one video; each lands in its own
+    # category so the examiner can select/export them independently.
+    assert pics["count"] == 1
+    assert pics["records"][0]["relative_path"].endswith("IMG_0007.JPG")
+    assert vids["count"] == 1
+    assert vids["records"][0]["relative_path"].endswith("IMG_0008.MOV")
+
+
+def test_export_dumps_photos_videos_and_conversations(backup, tmp_path):
+    from phonexe.analyze import analyze
+    from phonexe import export
+
+    report = analyze(backup.path)
+    out = tmp_path / "dump"
+    manifest = export.export_all(report, out)
+
+    # photos and videos offloaded into separate folders
+    assert manifest["media"]["count"] == 1
+    assert manifest["videos"]["count"] == 1
+    assert (out / "media").is_dir() and (out / "videos").is_dir()
+    assert list((out / "videos").glob("*.MOV"))
+    # conversations rendered to browsable HTML + a combined CSV
+    assert manifest["conversations"]["messages"] > 0
+    assert (out / "conversations.html").is_file()
+    assert (out / "conversations" / "whatsapp.html").is_file()
+    assert (out / "conversations.csv").is_file()
+    assert (out / "manifest.json").is_file()
 
 
 def test_encrypted_backup_rejected(tmp_path):

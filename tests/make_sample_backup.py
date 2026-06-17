@@ -350,6 +350,12 @@ def build(root: str | Path) -> Path:
         ("AppDomain-com.hammerandchisel.discord", "discord.db",
          _sqlite_bytes(_make_chat_builder([
              ("gg", "gamer"), ("join the call", "me")]))),
+        # Camera-roll media: one photo and one video, kept as separate
+        # artifact categories (photos vs videos) by the extractors.
+        ("CameraRollDomain", "Media/DCIM/100APPLE/IMG_0007.JPG",
+         media.read_bytes()),
+        ("CameraRollDomain", "Media/DCIM/100APPLE/IMG_0008.MOV",
+         b"\x00\x00\x00\x18ftypqt  FAKE-SAMPLE-VIDEO-BYTES"),
     ]
 
     # Build Manifest.db.

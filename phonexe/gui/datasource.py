@@ -44,7 +44,7 @@ def overview_stats(report: dict) -> list[tuple[str, int]]:
         ("stat_apps", _social_app_count(report)),
         ("stat_messages", messages),
         ("stat_photos", _count(report, "photos")),
-        ("stat_videos", 0),
+        ("stat_videos", _count(report, "videos")),
         ("stat_files", files),
         ("stat_deleted", _count(report, "deleted")),
     ]
@@ -185,6 +185,17 @@ def _photo_records(report: dict) -> list[dict]:
             "make": exif.get("Make"),
             "model": exif.get("Model"),
             "gps": "yes" if "gps_latitude" in exif else "",
+        })
+    return rows
+
+
+def _video_records(report: dict) -> list[dict]:
+    rows = []
+    for r in _records(report, "videos"):
+        size = r.get("size_bytes")
+        rows.append({
+            "path": r.get("relative_path"),
+            "size_mb": "" if size is None else round(size / 1_048_576, 2),
         })
     return rows
 
@@ -591,6 +602,8 @@ def section_count(report: dict, section: str) -> int | None:
                 + _social_total(report))
     if section == "sec_media":
         return _count(report, "photos")
+    if section == "sec_videos":
+        return _count(report, "videos")
     if section == "sec_calls":
         return _count(report, "calls")
     if section == "sec_contacts":
@@ -631,6 +644,8 @@ def section_table(report: dict, section: str
     elif section == "sec_media":
         cols, rows = _to_table(_photo_records(report),
                                ["path", "taken", "make", "model", "gps"])
+    elif section == "sec_videos":
+        cols, rows = _to_table(_video_records(report), ["path", "size_mb"])
     elif section == "sec_location":
         cols, rows = _to_table(_location_records(report),
                                ["latitude", "longitude", "timestamp", "source"])

@@ -67,6 +67,7 @@ _SECTION_GROUPS = [
     ("cat_data", [
         ("sec_messages", "message-circle"),
         ("sec_media", "image"),
+        ("sec_videos", "video"),
         ("sec_location", "map-pin"),
         ("sec_calls", "phone"),
         ("sec_voicemail", "voicemail"),

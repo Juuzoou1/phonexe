@@ -34,6 +34,12 @@ authorized-use scope.
   - `extractors/` (iOS) and `android/` — per-artifact parsers (SQLite/plist).
   - `apps/`, `forensics/sqlite_recover.py` (deleted carving), `backup.py`,
     `timeutil.py`, `hashing.py`, `audit.py`, `ios_acquire.py`.
+  - `export.py` — evidence offload: `phonexe export <src> -o <dir>` copies the
+    real photos (`media/`) and videos (`videos/`) into separate folders with CSV
+    indexes, and renders every conversation to app-themed HTML + `conversations.csv`.
+    Photos and videos are **separate artifact categories** (`photos` vs `videos`
+    extractors; `sec_media`=الصور, `sec_videos`=الفيديو) so they can be reviewed/
+    selected/exported independently.
   - `reporting/` — JSON/HTML/PDF reports.
   - `server.py` + `phonexe serve` — local JSON API for the React frontend.
 - **PyQt6 desktop GUI** (current, working): `phonexe/gui/`

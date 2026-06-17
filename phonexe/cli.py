@@ -145,6 +145,33 @@ def _cmd_analyze(args) -> int:
     return 0
 
 
+def _cmd_export(args) -> int:
+    """Offload the actual photos + conversations out of a backup/extraction."""
+    from . import analyze as _analyze
+    from . import export as _export
+
+    try:
+        report = _analyze.analyze(args.source)
+    except Exception as e:
+        print(f"[!] {e}", file=sys.stderr)
+        return 2
+
+    out = Path(args.output or "phonexe_export")
+    print(BANNER)
+    print(f"[i] Offloading evidence to: {out}")
+    result = _export.export_all(report, out)
+    media = result["media"]
+    vids = result["videos"]
+    conv = result["conversations"]
+    print(f"[+] Photos exported : {media['count']} "
+          f"({media['with_gps']} with GPS) -> {media['dir']}")
+    print(f"[+] Videos exported : {vids['count']} -> {vids['dir']}")
+    print(f"[+] Conversations   : {conv['messages']} messages across "
+          f"{len(conv['apps'])} apps -> {conv['dir']}")
+    print(f"[+] Open {out / 'conversations.html'} to browse.")
+    return 0
+
+
 def _run_pipeline(source, extractors) -> dict:
     """Run a list of extractor modules against *source*, printing progress."""
     artifacts: dict[str, dict] = {}
@@ -437,6 +464,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_acq.add_argument("--examiner", help="examiner name (recorded in report)")
     p_acq.add_argument("--case-id", help="case identifier (recorded in report)")
     p_acq.set_defaults(func=_cmd_acquire_ios)
+
+    # ---- evidence offload: dump photos + conversations ----
+    p_exp = sub.add_parser(
+        "export",
+        help="offload the actual photos + conversations into a browsable folder",
+    )
+    p_exp.add_argument("source",
+                       help="path to an iOS backup or Android extraction")
+    p_exp.add_argument("-o", "--output", help="output directory for the dump")
+    p_exp.set_defaults(func=_cmd_export)
 
     # ---- local API server (for the Electron/React frontend) ----
     p_srv = sub.add_parser("serve", help="run the local JSON API server")

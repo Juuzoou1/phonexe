@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, LayoutGrid, MessageCircle, Image, MapPin, Phone,
+  LayoutDashboard, LayoutGrid, MessageCircle, Image, Video, MapPin, Phone,
   Voicemail, Users, Globe, Calendar, FileText, File, Clock, Share2, Contact,
   KeyRound, Trash2, Bookmark, History, Smartphone, Power,
 } from "lucide-react";
@@ -14,7 +14,8 @@ const GROUPS: { cat: string; code: string; items: [string, any, string][] }[] = 
   ]},
   { cat: "البيانات المحلّلة", code: "DATA", items: [
     ["sec_messages", MessageCircle, "الرسائل والمحادثات"],
-    ["sec_media", Image, "وسائط متعددة"],
+    ["sec_media", Image, "الصور"],
+    ["sec_videos", Video, "الفيديو"],
     ["sec_location", MapPin, "الموقع الجغرافي"],
     ["sec_calls", Phone, "سجل المكالمات"],
     ["sec_voicemail", Voicemail, "البريد الصوتي"],
