@@ -947,7 +947,12 @@ class MainWindow(QWidget):
 
     def _on_failed(self, msg: str):
         self.donut.set_percent(0)
-        QMessageBox.critical(self, "phonexe", msg)
+        self.add_event(tr("acq_failed"))
+        self.audit.record("acquisition_failed", msg[:200])
+        # Append a step-by-step checklist so the examiner knows what to fix.
+        QMessageBox.critical(
+            self, "phonexe",
+            f"{msg}\n\n{tr('acq_help')}")
 
     # ------------------------------------------------------------ events
     def add_event(self, text: str):

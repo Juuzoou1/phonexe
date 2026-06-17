@@ -40,7 +40,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller Pillow PyQt6 PyQt6-Fluent-Widgets
-          pip install pymobiledevice3 || echo "pymobiledevice3 optional - skipped"
+          # pymobiledevice3 is the pure-Python backend that lets the EXE pull a
+          # backup straight from a connected iPhone. Required (not optional) so
+          # direct acquisition always works in the packaged app.
+          pip install pymobiledevice3
       - name: Build phonexe.exe
         run: python build_exe.py
       - name: Upload executable

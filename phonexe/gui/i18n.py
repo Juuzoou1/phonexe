@@ -66,6 +66,21 @@ _STRINGS: dict[str, dict[str, str]] = {
     "export_html": {"ar": "تصدير HTML", "en": "Export HTML"},
     "export_json": {"ar": "تصدير JSON", "en": "Export JSON"},
     "export_csv": {"ar": "تصدير CSV", "en": "Export CSV"},
+    "acq_failed": {"ar": "فشل سحب النسخة من الجهاز",
+                   "en": "Device acquisition failed"},
+    "acq_help": {
+        "ar": ("تأكد خطوة بخطوة:\n"
+               "١. الآيفون موصّل بالكيبل ومفكوك القفل.\n"
+               "٢. اضغط \"الوثوق بهذا الكمبيوتر\" (Trust) على الجهاز.\n"
+               "٣. ثبّت تعريف Apple (\"Apple Devices\" أو iTunes).\n"
+               "٤. أوقف تشفير النسخة الاحتياطية (Encrypt backup) من iTunes.\n"
+               "٥. خلّ الجهاز موصّلاً حتى ينتهي السحب."),
+        "en": ("Checklist:\n1. iPhone connected and unlocked.\n"
+               "2. Tap 'Trust This Computer' on the device.\n"
+               "3. Install the Apple driver ('Apple Devices' or iTunes).\n"
+               "4. Turn OFF encrypted backup in iTunes.\n"
+               "5. Keep the device connected until the pull finishes."),
+    },
     "add_to_report": {"ar": "أضف للتقرير", "en": "Add to Report"},
     "final_report": {"ar": "التقرير النهائي", "en": "Final Report"},
     "added_n": {"ar": "أُضيف {n} عنصر للتقرير", "en": "Added {n} item(s)"},

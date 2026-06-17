@@ -77,7 +77,9 @@ def main() -> int:
     # bundle the pure-Python iOS acquisition backend only if it is installed
     try:
         import pymobiledevice3  # noqa: F401
-        cmd += ["--collect-submodules", "pymobiledevice3"]
+        # collect-all (not just submodules): pymobiledevice3 ships data files
+        # (device lists, plist templates) the backup2 backend needs at runtime.
+        cmd += ["--collect-all", "pymobiledevice3"]
     except ImportError:
         print("note: pymobiledevice3 not installed — acquire-ios will rely on "
               "bundled/system libimobiledevice instead.")
