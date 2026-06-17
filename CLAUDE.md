@@ -135,3 +135,34 @@ Generate the synthetic sample backup used by tests/screenshots:
 - Live USB device detection needs host drivers (Apple "Apple Devices" for
   iPhone; ADB/platform-tools for Android). The always-works path is **"Open
   source / extraction"** on an existing backup folder.
+
+## Session handoff — current status (read me first)
+
+State as of the latest session so a fresh chat is in sync:
+
+- **Done & shipped (committed + pushed):** photo/video split into separate
+  categories; evidence offload (`phonexe export`); selective export
+  (`export_selection`) + the generalized cart → combined `build_selection_report`;
+  PyQt checkbox column on every tabular section with "أضف للتقرير"/"التقرير
+  النهائي"; React checkbox selection on photos/videos sections via
+  `POST /api/export-selection`; expanded chat-app coverage + deleted-message
+  carving; generated app icon; direct iOS acquisition wired GUI→`AcquireWorker`
+  →`ios_acquire.acquire()`→`analyze` with a step-by-step failure checklist;
+  `pymobiledevice3` made a **required** build dep + `--collect-all` bundled.
+- **Verified:** full WhatsApp scan→browse pipeline works in-app (on the
+  synthetic sample — real-device confirmation still needs the user's hardware).
+  Tests green (~58 pass, 1 skip).
+- **Pending / next:** generalize the cart + final report to **all** sections in
+  React (PyQt already does); polish the final report (case/examiner header, PDF);
+  confirm the latest release build published with the acquisition changes.
+- **User preferences (important):** replies in **Arabic**; wants the EXE to do
+  acquisition **and** scan itself; conversations must open **in-app**, not a
+  browser; selection→report should eventually cover **every** artifact type;
+  the report is the **last** step after scanning. Codes (install + activation) =
+  `2002`.
+- **Ethics (hard line, already enforced):** declined a request to integrate a
+  passcode/lock-bypass tool ("DarkSword"). No jailbreak/exploit/encryption-defeat
+  — authorized logical acquisition of an unlocked, trusted device only.
+- **Ops note:** GitHub MCP reads can lag badly (stale "in_progress"); don't
+  cancel a run based on a stale read — a prior run was cancelled by mistake that
+  way. The release publishes to tag `v0.1.0` via `workflow_dispatch`.
