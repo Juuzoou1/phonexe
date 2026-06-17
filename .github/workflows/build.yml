@@ -1,0 +1,80 @@
+name: build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3
+      - name: Install Python dependencies
+        run: pip install Pillow PyQt6 pytest
+      - name: Run tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+
+  build-windows:
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller Pillow PyQt6 PyQt6-Fluent-Widgets
+          # pymobiledevice3 is the pure-Python backend that lets the EXE pull a
+          # backup straight from a connected iPhone. Required (not optional) so
+          # direct acquisition always works in the packaged app.
+          pip install pymobiledevice3
+      - name: Build phonexe.exe
+        run: python build_exe.py
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: phonexe-windows
+          path: dist/phonexe.exe
+          if-no-files-found: error
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+      - name: Build Windows installer (password-protected)
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\phonexe.iss'
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: phonexe-setup
+          path: installer/Output/phonexe-setup.exe
+          if-no-files-found: error
+      - name: Publish GitHub Release
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.0
+          name: phonexe v0.1.0
+          body: |
+            phonexe — Digital Forensics Platform (Windows).
+
+            - **phonexe-setup.exe** — installer. Install code: `2002`.
+            - **phonexe.exe** — standalone executable.
+
+            On first launch the app asks for the activation code `2002`.
+          files: |
+            installer/Output/phonexe-setup.exe
+            dist/phonexe.exe

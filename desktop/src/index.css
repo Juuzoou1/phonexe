@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --hud-accent: #A855F7;
+}
+
+* {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  margin: 0;
+  background: #000000;
+  color: #f4f8fc;
+  font-family: "IBM Plex Sans Arabic", Cairo, "Segoe UI", Tahoma, sans-serif;
+}
+
+/* thin custom scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #14304a; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #1f7e7c; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------------------------------------------------------------- CRT overlay
+   Fixed, pointer-events:none scanlines + faint flicker + vignette over the
+   whole shell — the single highest-ROI authenticity cue (DOM text, not WebGL). */
+.crt-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+.crt-overlay::before {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent 0 2px, rgba(0, 0, 0, 0.16) 2px 3px);
+}
+.crt-overlay::after {
+  content: ""; position: absolute; inset: 0; opacity: 0.05;
+  background: linear-gradient(rgba(24, 255, 200, 0.10), transparent);
+  animation: crt-flicker 0.18s steps(2) infinite;
+}
+.crt-vignette {
+  position: fixed; inset: 0; pointer-events: none; z-index: 49;
+  background: radial-gradient(120% 90% at 50% 45%,
+    transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+@keyframes crt-flicker { 0%, 100% { opacity: 0.04; } 50% { opacity: 0.085; } }
+
+/* ---- halftone / dither textures (the print look from the references) ---- */
+/* halftone dot grid — set text color to tint; size via --ht (default 5px) */
+.halftone {
+  background-image: radial-gradient(currentColor 35%, transparent 38%);
+  background-size: var(--ht, 5px) var(--ht, 5px);
+}
+/* fine film-grain dither overlay for the whole shell */
+.grain-overlay {
+  position: fixed; inset: 0; pointer-events: none; z-index: 48; opacity: 0.5;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.045) 0.5px, transparent 0.6px);
+  background-size: 3px 3px;
+}
+
+/* ---------------------------------------------------------------- FUI chrome */
+/* corner brackets on any element (set --hud-accent to recolor per zone) */
+.hud { position: relative; }
+.hud::before, .hud::after {
+  content: ""; position: absolute; width: 13px; height: 13px;
+  border: 1px solid var(--hud-accent); pointer-events: none; opacity: 0.9;
+}
+.hud::before { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
+.hud::after  { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
+
+/* notched / chamfered panel body */
+.fui-panel {
+  clip-path: polygon(
+    0 0, calc(100% - 14px) 0, 100% 14px,
+    100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+
+/* tiny tracked technical label */
+.fui-label {
+  font-family: "Share Tech Mono", "JetBrains Mono Variable", ui-monospace, monospace;
+  text-transform: uppercase; letter-spacing: 0.22em; font-size: 10px;
+}
+
+/* ---------------------------------------------------------------- glitch text
+   RGB split; only visible while the .is-glitching class is toggled (rare). */
+.glitch { position: relative; }
+.glitch.is-glitching::before, .glitch.is-glitching::after {
+  content: attr(data-text); position: absolute; inset: 0;
+  mix-blend-mode: screen; pointer-events: none;
+}
+.glitch.is-glitching::before { color: #FF003C; transform: translateX(-2px); }
+.glitch.is-glitching::after  { color: #00E5FF; transform: translateX(2px); }
+.glitch.is-glitching { animation: glitch-skew 0.14s steps(2) 1; }
+@keyframes glitch-skew {
+  0%, 100% { transform: translate(0); }
+  25% { transform: translate(-2px, 1px); }
+  50% { transform: translate(2px, -1px); }
+  75% { transform: translate(-1px, -1px); }
+}
+
+/* scanning sweep line (for 'scanning…' affordances) */
+@keyframes sweep { 0% { transform: translateY(-120%); } 100% { transform: translateY(220%); } }
+
+/* blinking terminal cursor */
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.cursor-blink { animation: blink 1s steps(1) infinite; }
+
+/* honor reduced motion: kill all decorative motion */
+@media (prefers-reduced-motion: reduce) {
+  .crt-overlay::after, .glitch.is-glitching { animation: none; }
+}

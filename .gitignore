@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec
+
+# Generated reports / sample data
+sample/
+phonexe_report/
+*.report/
+
+# Bundled Android platform-tools (downloaded on demand via `phonexe fetch-adb`,
+# Apache 2.0; not committed to keep the repo free of large binaries)
+phonexe/gui/assets/tools/adb
+phonexe/gui/assets/tools/adb.exe
+phonexe/gui/assets/tools/*.dll
