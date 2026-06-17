@@ -116,6 +116,21 @@ def make_handler(state: _State):
                 with state.lock:
                     state.report = report
                 return self._send(_overview(report))
+            if u.path.rstrip("/") == "/api/export-selection":
+                if state.report is None:
+                    return self._send({"error": "no_report"}, 404)
+                from . import export as _export
+                from pathlib import Path as _Path
+                dest = data.get("dest") or "phonexe_selection"
+                try:
+                    summary = _export.export_selection(
+                        state.report, dest,
+                        photos=data.get("photos") or [],
+                        videos=data.get("videos") or [])
+                except Exception as e:
+                    return self._send({"error": str(e)}, 400)
+                summary["dest"] = str(_Path(dest).resolve())
+                return self._send(summary)
             return self._send({"error": "not_found"}, 404)
 
     return Handler

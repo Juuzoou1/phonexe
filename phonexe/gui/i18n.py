@@ -66,6 +66,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "export_html": {"ar": "تصدير HTML", "en": "Export HTML"},
     "export_json": {"ar": "تصدير JSON", "en": "Export JSON"},
     "export_csv": {"ar": "تصدير CSV", "en": "Export CSV"},
+    "export_selected": {"ar": "صدّر المحدّد", "en": "Export Selected"},
+    "select_some": {"ar": "حدّد عنصراً واحداً على الأقل أولاً.",
+                    "en": "Select at least one item first."},
     # ---- startup / case setup wizard ----
     "welcome_title": {"ar": "بدء فحص جنائي جديد", "en": "New Forensic Examination"},
     "welcome_sub": {"ar": "أدخل بيانات المحقق والقضية للبدء",

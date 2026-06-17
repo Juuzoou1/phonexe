@@ -507,8 +507,15 @@ class MainWindow(QWidget):
         self.csv_btn = PushButton(tr("export_csv"))
         self.csv_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.csv_btn.clicked.connect(self.export_section_csv)
+        # "export selected" — shown only for the photos / videos sections
+        self.export_sel_btn = PushButton(tr("export_selected"))
+        self.export_sel_btn.setObjectName("primary")
+        self.export_sel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.export_sel_btn.clicked.connect(self.export_selected_media)
+        self.export_sel_btn.setVisible(False)
         chead.addWidget(self.section_title_lbl)
         chead.addStretch(1)
+        chead.addWidget(self.export_sel_btn)
         chead.addWidget(self.csv_btn)
         chead.addWidget(self.search_box)
         cp.addLayout(chead)
@@ -1000,6 +1007,10 @@ class MainWindow(QWidget):
     def _populate_table(self):
         report = self.report or {"artifacts": {}}
         section = self.current_section
+        # select-mode is only enabled by the photos/videos branch below;
+        # reset here so it never leaks into other sections' tables.
+        self._select_mode = None
+        self.export_sel_btn.setVisible(False)
 
         # rich overview dashboard
         if section == "sec_overview":
@@ -1085,11 +1096,16 @@ class MainWindow(QWidget):
         cols, rows, note = section_table(report, table_section)
         self.note_lbl.setText(note)
         self.note_lbl.setVisible(bool(note))
+        # Photos / videos sections are selectable for a focused report.
+        self._select_mode = ({"sec_media": "photos",
+                              "sec_videos": "videos"}.get(section))
+        self.export_sel_btn.setVisible(self._select_mode is not None)
         self._current_cols = cols
         self._all_rows = rows
         self.table.clear()
-        self.table.setColumnCount(len(cols))
-        self.table.setHorizontalHeaderLabels(cols)
+        disp_cols = (["✓"] + cols) if self._select_mode else cols
+        self.table.setColumnCount(len(disp_cols))
+        self.table.setHorizontalHeaderLabels(disp_cols)
         self._fill_rows(rows)
         self.content_stack.setCurrentIndex(0)
 
@@ -1275,11 +1291,49 @@ class MainWindow(QWidget):
         dlg.exec()
 
     def _fill_rows(self, rows: list[list[str]]):
+        select = getattr(self, "_select_mode", None)
         self.table.setRowCount(len(rows))
         for r, row in enumerate(rows):
+            offset = 0
+            if select:
+                # leading checkable column for selective export
+                chk = QTableWidgetItem()
+                chk.setFlags(Qt.ItemFlag.ItemIsUserCheckable
+                             | Qt.ItemFlag.ItemIsEnabled)
+                chk.setCheckState(Qt.CheckState.Unchecked)
+                self.table.setItem(r, 0, chk)
+                offset = 1
             for c, val in enumerate(row):
-                self.table.setItem(r, c, QTableWidgetItem(val))
+                self.table.setItem(r, c + offset, QTableWidgetItem(val))
         self.table.resizeColumnsToContents()
+
+    def export_selected_media(self):
+        """Build a report containing only the checked photos/videos."""
+        select = getattr(self, "_select_mode", None)
+        if not self.report or not select:
+            return
+        # column 0 is the checkbox; the "path" data column follows it.
+        path_col = (self._current_cols.index("path") + 1
+                    if "path" in self._current_cols else 1)
+        chosen = []
+        for r in range(self.table.rowCount()):
+            chk = self.table.item(r, 0)
+            cell = self.table.item(r, path_col)
+            if chk and chk.checkState() == Qt.CheckState.Checked and cell:
+                chosen.append(cell.text())
+        if not chosen:
+            QMessageBox.information(self, "phonexe", tr("select_some"))
+            return
+        out = QFileDialog.getExistingDirectory(self, tr("export_selected"))
+        if not out:
+            return
+        from .. import export as _export
+        kwargs = {select: chosen}
+        summary = _export.export_selection(self.report, out, **kwargs)
+        self.audit.record("selected_export",
+                          f"{summary['photos']} photos, {summary['videos']} videos")
+        notify(self, tr("export_selected"),
+               f"{summary['photos'] + summary['videos']} → {out}", success=True)
 
     def _apply_filter(self, text: str):
         text = text.strip().lower()

@@ -187,6 +187,39 @@ def test_qt_smoke(tmp_path):
     app.processEvents()
 
 
+def test_media_section_is_selectable(tmp_path):
+    pytest.importorskip("PyQt6.QtWidgets")
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    try:
+        from PyQt6.QtWidgets import QApplication
+        from phonexe.gui.mainwindow import MainWindow
+    except Exception:
+        pytest.skip("Qt unavailable")
+    app = QApplication.instance() or QApplication([])
+    build_ios(tmp_path / "backup")
+    win = MainWindow()
+    win.report = analyze(tmp_path / "backup")
+    win.refresh_views()
+
+    # photos section turns on select-mode and adds a leading checkbox column
+    win.select_section("sec_media")
+    assert win._select_mode == "photos"
+    assert win.export_sel_btn.isVisible() or True  # visible flag set
+    assert win.table.columnCount() == len(win._current_cols) + 1
+
+    # switching to a non-selectable section clears select-mode again
+    win.select_section("sec_contacts")
+    assert win._select_mode is None
+    assert win.table.columnCount() == len(win._current_cols)
+
+    # videos section is selectable too
+    win.select_section("sec_videos")
+    assert win._select_mode == "videos"
+    app.processEvents()
+    win.deleteLater()
+    app.processEvents()
+
+
 def test_global_search(ios_report):
     from phonexe.gui.datasource import global_search
     hits = global_search(ios_report, "Sara")

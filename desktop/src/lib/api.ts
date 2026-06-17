@@ -55,6 +55,17 @@ export const api = {
   keywords: () => get<{ keywords: [string, number][] }>("/api/keywords"),
   search: (q: string) =>
     get<{ hits: SearchHit[] }>(`/api/search?q=${encodeURIComponent(q)}`),
+  exportSelection: async (
+    sel: { photos?: string[]; videos?: string[]; dest?: string }
+  ): Promise<{ photos: number; videos: number; report: string; dest: string }> => {
+    const r = await fetch(BASE + "/api/export-selection", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sel),
+    });
+    if (!r.ok) throw new Error((await r.json()).error ?? `export: ${r.status}`);
+    return r.json();
+  },
   analyze: async (path: string): Promise<Overview> => {
     const r = await fetch(BASE + "/api/analyze", {
       method: "POST",
